@@ -207,6 +207,61 @@
 
 ;; TODO try a simpler one, that just checks for monotonicity (never see an old one again)
 
+;; detect-regression : (listof optimization-event?)
+;;                       -> (or/c (listof success?) #f)
+;; takes a list of events that affect a given location, and returns #f
+;; if the number of failures does not increase, or the list of strategies
+;; that were picked over time (in case worse strategies get picked over time)
+;; ASSUMPTION: more failures = worse strategy is picked
+;;   this relies on, for a given operation, the same strategies being attempted
+;;   in the same order every time.
+;; TODO don't just detect "global" regressions (getting worse and worse, never
+;;   better), but also "local" regressions (getting worse between any 2
+;;   compilations). that would also catch flip-flops, though
+(define (detect-regression event-group)
+  (define (failures event)
+    (filter failure? (optimization-event-attempts event)))
+  (define (final-strategy event)
+    (for/first ([a (optimization-event-attempts event)]
+                #:when (success? a))
+      (match-define (success strategy details) a)
+      (if details (format "~a (~a)" strategy details) strategy)))
+  (define (obj-type event) ;; TODO that alone can't explain failures
+    (dict-ref (optimization-event-type-dict (first event-group)) "obj"))
+  (define-values (max-n-failures rev-regression)
+    (for/fold ([max-n-failures (length (failures (first event-group)))]
+               [rev-regression (list (list (final-strategy (first event-group))
+                                           (obj-type (first event-group))))])
+        ([e (rest event-group)])
+      (define n-failures (length (failures e)))
+      (cond [(> n-failures max-n-failures) ; regression
+             (values n-failures
+                     (cons (list (final-strategy e) (obj-type e))
+                           rev-regression))]
+            [else
+             (values max-n-failures
+                     rev-regression)])))
+  (and (> (length rev-regression) 1) ; we actually did get worse
+       (reverse rev-regression)))
+
+;; report-regressions : (listof optimization-event?) -> void?
+;; takes a list of (ungrouped) events, and prints regression reports
+;; TODO eventually return a report struct, or sth, instead of printing
+;; TODO abstract with flip-flop reporting
+(define (report-regressions all-events)
+  (define by-location (group-by-location all-events))
+  (for ([es by-location])
+    (when (empty? es) ; can't happen
+      (error "can't detect regressions on an empty group"))
+    (define regression? (detect-regression es))
+    (when regression?
+      (printf "implementation regressed at ~a\n"
+              (optimization-event-location (first es)))
+      (for ([strategy+types regression?])
+        (printf "    ~a (types: ~a)\n"
+                (first strategy+types)
+                (second strategy+types))))))
+
 
 (module+ main
   (define log-file (vector-ref (current-command-line-arguments) 0))
@@ -229,10 +284,14 @@
   ;;           ;; TODO that one actually looks like a case of flip flopping: type info keeps going from "object" to "null + object", back and forth
   ;;           ;; TODO so, it seems like using null as a sentinel for a linked list may be a bad idea. should use arrays instead, maybe? or use an object of the same type with a flag?
   ;;           ;; TODO if that helps, that's a good recommendation, because it's not obvious at all (to me at least), at first
+  ;;           ;; TODO despite the flip flopping, always succeeds at accessing a fixed slot anyway
   ;;           (first (sort by-location > #:key length)))
 
 
   ;; (detect-flip-flop (first (sort by-location > #:key length)))
-  (report-flip-flops parsed-events)
+  (report-flip-flops parsed-events) ; one found in richards
+
+  ;; (for-each displayln (optimization-event-attempts (first parsed-events)))
+  (report-regressions parsed-events) ; one found in paper-example-poly3
 
   )
