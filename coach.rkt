@@ -92,8 +92,9 @@
 ;;   too, sometimes is a verb phrase, sometimes a noun. clean up
 (struct attempt (strategy) #:transparent)
 ;; reason : string?
-(struct failure attempt (reason))
-(struct success attempt (details)) ; e.g. what sub-strategy succeeded
+(struct failure attempt (reason) #:transparent)
+;; details: string? ; e.g. what sub-strategy succeeded
+(struct success attempt (details) #:transparent)
 ;; TODO maybe not have sub-strategies, and consider each as a top-level
 ;;  success/failure. currently, e.g., inlining a poly getprop is a success,
 ;;  but it's less good than inlining a mono one. but that doesn't show up as
@@ -128,7 +129,8 @@
     (cond [(regexp-match "^COACH:        success(, )?(.*)$" (first ls))
            => (match-lambda [(list _ _ details)
                              (cons (success strategy
-                                            (and (equal? details "") details))
+                                            (and (not (equal? details ""))
+                                                 details))
                                    (parse-strategy (rest ls)))])]
           [(regexp-match "^COACH:        failure, (.+)$" (first ls))
            => (match-lambda [(list _ reason)
