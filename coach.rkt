@@ -32,18 +32,18 @@
 ;;   mapping "operand name" to their possible types
 ;; attempts : (listof string?) ;; TODO for now
 (struct optimization-event (location operation type-dict attempts) #:transparent)
-(struct location (file line script-no bytecode-no) #:transparent)
+(struct location (file line column script offset) #:transparent)
 
 ;; parse-event : (listof string?) -> optimization-event?
 (define (parse-event e)
 
   ;; first line is of the form:
-  ;; "COACH: optimizing <operation>: <file>:<line> #<script-no>:<bytecode-no>"
-  (match-define (list _ operation file line script-no bytecode-no)
+  ;; "COACH: optimizing <operation>: <file>:<line>:<column> #<script>:<offset>"
+  (match-define (list _ operation file line column script offset)
     (regexp-match
-     "^COACH: optimizing ([^ ]+): ([^: ]+):([0-9]+) #([0-9]+):([0-9]+)$"
+     "^COACH: optimizing ([^ ]+): ([^: ]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
      (first e)))
-  (unless (and operation file line script-no bytecode-no)
+  (unless (and operation file line column script offset)
     (error "invalid log entry" (first e)))
 
   ;; type info is of the form:
@@ -73,8 +73,9 @@
 
   (optimization-event (location file
                                 (string->number line)
-                                (string->number script-no)
-                                (string->number bytecode-no))
+                                (string->number column)
+                                (string->number script)
+                                (string->number offset))
                       operation
                       type-dict
                       attempts-log)) ;; TODO prune and parse that later
