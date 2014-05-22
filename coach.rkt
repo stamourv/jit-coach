@@ -92,6 +92,11 @@
 ;;    invalidating it, repeatedly). returns the typesets that we keep
 ;;    flip-flopping between.
 ;;  - #f, if this site doesn't cause flip-flopping.
+;; Niko's explanation for why flip-flopping happens at all:
+;;   on major GCs, compiled code, baseline ICs, typesets, etc. all get
+;;   GCed (hard to tell what's still hot and/or useful), so need to
+;;   start gathering info and compiling from scratch every time.
+;;   (not the case for ||js code, though, but not relevant for us)
 (define (detect-flip-flop event-group)
 
   ;; we only care about type sets for `obj`, since it's the one
