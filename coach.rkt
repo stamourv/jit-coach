@@ -230,10 +230,13 @@
            (fprintf port "from ~a to ~a\n"
                     (regression-from-strategy regression)
                     (regression-to-strategy regression))
-           (fprintf port "causes:\n")
+           (fprintf port "causes:\n\n")
            ;; TODO call the failure explanation logic, when it exists
            (for ([f (regression-new-failures regression)])
-             (fprintf port "    ~a\n" (failure-reason f))))])
+             ;; TODO put explain-failure in the printer for failures?
+             ;;   actually, can't. also requires the enclosing event
+             (fprintf port "~a"
+                      (explain-failure f (regression-to-event regression)))))])
 
 (define (regression-from-strategy regression)
   (event-strategy (regression-from-event regression)))
@@ -256,9 +259,6 @@
 ;; ASSUMPTION: more failures = worse strategy is picked
 ;;   this relies on, for a given operation, the same strategies being attempted
 ;;   in the same order every time.
-;; TODO don't just detect "global" regressions (getting worse and worse, never
-;;   better), but also "local" regressions (getting worse between any 2
-;;   compilations). that would also catch flip-flops, though
 (define (detect-regression event-group)
   (define-values (max-n-failures max-n-failures-event rev-regressions)
     (for/fold ([max-n-failures (length (event-failures (first event-group)))]
@@ -292,6 +292,32 @@
       (printf "implementation regressed at ~a\n"
               (optimization-event-location (first es)))
       (for-each displayln regression?))))
+
+
+;;;; failure explanation
+
+;; explain-failure : failure? optimization-event? -> string?
+;; given a failure that happened during the given event, try to sketch
+;; an explanation for the user
+;; done on a case-by-case basis, work in progress.
+(define (explain-failure failure event)
+  (match (failure-reason failure)
+    ["would require a barrier"
+     (unless (equal? "setprop" (optimization-event-operation event))
+       (error "should only happen for getprop"))
+     (define expected-types
+       (dict-ref (optimization-event-type-dict event) "property"))
+     (define unexpected-type
+       (dict-ref (optimization-event-type-dict event) "value"))
+     (string-append
+      (format "so far, this property has held values of type:\n    ~a\n"
+              expected-types)
+      (format "but this operation would assign a value of type:\n    ~a\n"
+              unexpected-type)
+      "which causes a type barrier to be added, which disables some "
+      "optimizations\n\n")]
+    [reason ;; TODO implement more
+     (format "~a (no explanation implemented yet!)\n\n" reason)]))
 
 
 (module+ main
