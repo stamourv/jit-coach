@@ -60,22 +60,26 @@
   ;;     "COACH:    value types: <int>"
   ;; for now, we just consider typeinfo to be a string TODO exploit structure
   (define type-dict
-    (cond [(equal? operation "getprop")
-           (match-define (list _ obj-types)
-             (regexp-match "^COACH:    types: ?(.*)$" (second e)))
-           (hash "obj" obj-types)]
-          [(equal? operation "setprop")
-           (match-define (list _ obj-types)
-             (regexp-match "^COACH:    obj types: ?(.*)$" (second e)))
-           (match-define (list _ property-types) ; from the heap typeset
-             ;; there's one set of types per possible object type
-             ;; TODO eventually have a separator for those
-             (regexp-match "^COACH:    property types: ?(.*)$" (third e)))
-           (match-define (list _ value-types)
-             (regexp-match "^COACH:    value types: ?(.*)$" (fourth e)))
-           (hash "obj" obj-types "property" property-types "value" value-types)]
-          [else
-           (error "unknown operation" operation)]))
+    (with-handlers
+        ([exn:misc:match? (lambda (_) (error "ill-formed event" e))])
+      (cond [(equal? operation "getprop")
+             (match-define (list _ obj-types)
+               (regexp-match "^COACH:    types: ?(.*)$" (second e)))
+             (hash "obj" obj-types)]
+            [(equal? operation "setprop")
+             (match-define (list _ obj-types)
+               (regexp-match "^COACH:    obj types: ?(.*)$" (second e)))
+             (match-define (list _ property-types) ; from the heap typeset
+               ;; there's one set of types per possible object type
+               ;; TODO eventually have a separator for those
+               (regexp-match "^COACH:    property types: ?(.*)$" (third e)))
+             (match-define (list _ value-types)
+               (regexp-match "^COACH:    value types: ?(.*)$" (fourth e)))
+             (hash "obj"      obj-types
+                   "property" property-types
+                   "value"    value-types)]
+            [else
+             (error "unknown operation" operation)])))
   (define attempts-log
     (if (equal? operation "getprop")
         (drop e 2) ; single line of type info + first line with general info
