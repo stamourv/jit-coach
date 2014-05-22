@@ -211,6 +211,39 @@
 
 ;; TODO try a simpler one, that just checks for monotonicity (never see an old one again)
 
+
+(define (event-failures event)
+  (filter failure? (optimization-event-attempts event)))
+(define (event-strategy event)
+  (for/first ([a (optimization-event-attempts event)]
+              #:when (success? a))
+    (match-define (success strategy details) a)
+    (if details (format "~a (~a)" strategy details) strategy)))
+
+(struct regression (from-event to-event) #:transparent
+        #:methods gen:custom-write
+        [(define (write-proc regression port _)
+           (fprintf port "from ~a to ~a\n"
+                    (regression-from-strategy regression)
+                    (regression-to-strategy regression))
+           (fprintf port "causes:\n")
+           ;; TODO call the failure explanation logic, when it exists
+           (for ([f (regression-new-failures regression)])
+             (fprintf port "    ~a\n" (failure-reason f))))])
+
+(define (regression-from-strategy regression)
+  (event-strategy (regression-from-event regression)))
+(define (regression-to-strategy regression)
+  (event-strategy (regression-to-event regression)))
+(define (regression-new-failures regression)
+  (define old-failures (event-failures (regression-from-event regression)))
+  (define new-failures (event-failures (regression-to-event regression)))
+  ;; compute the delta
+  ;; ASSUMPTION: shared prefix, same strategies tried in same order
+  ;; INVARIANT: new-failures has more failures than old-failures
+  ;;   (o/w wouldn't be a regression)
+  (drop new-failures (length old-failures)))
+
 ;; detect-regression : (listof optimization-event?)
 ;;                       -> (or/c (listof success?) #f)
 ;; takes a list of events that affect a given location, and returns #f
@@ -223,30 +256,23 @@
 ;;   better), but also "local" regressions (getting worse between any 2
 ;;   compilations). that would also catch flip-flops, though
 (define (detect-regression event-group)
-  (define (failures event)
-    (filter failure? (optimization-event-attempts event)))
-  (define (final-strategy event)
-    (for/first ([a (optimization-event-attempts event)]
-                #:when (success? a))
-      (match-define (success strategy details) a)
-      (if details (format "~a (~a)" strategy details) strategy)))
-  (define (obj-type event) ;; TODO that alone can't explain failures
-    (dict-ref (optimization-event-type-dict (first event-group)) "obj"))
-  (define-values (max-n-failures rev-regression)
-    (for/fold ([max-n-failures (length (failures (first event-group)))]
-               [rev-regression (list (list (final-strategy (first event-group))
-                                           (obj-type (first event-group))))])
+  (define-values (max-n-failures max-n-failures-event rev-regressions)
+    (for/fold ([max-n-failures (length (event-failures (first event-group)))]
+               [max-n-failures-event (first event-group)]
+               [rev-regressions '()])
         ([e (rest event-group)])
-      (define n-failures (length (failures e)))
+      (define n-failures (length (event-failures e)))
       (cond [(> n-failures max-n-failures) ; regression
              (values n-failures
-                     (cons (list (final-strategy e) (obj-type e))
-                           rev-regression))]
+                     e
+                     (cons (regression max-n-failures-event e)
+                           rev-regressions))]
             [else
              (values max-n-failures
-                     rev-regression)])))
-  (and (> (length rev-regression) 1) ; we actually did get worse
-       (reverse rev-regression)))
+                     max-n-failures-event
+                     rev-regressions)])))
+  (and (not (empty? rev-regressions)) ; we actually did get worse
+       (reverse rev-regressions)))
 
 ;; report-regressions : (listof optimization-event?) -> void?
 ;; takes a list of (ungrouped) events, and prints regression reports
@@ -261,10 +287,7 @@
     (when regression?
       (printf "implementation regressed at ~a\n"
               (optimization-event-location (first es)))
-      (for ([strategy+types regression?])
-        (printf "    ~a (types: ~a)\n"
-                (first strategy+types)
-                (second strategy+types))))))
+      (for-each displayln regression?))))
 
 
 (module+ main
