@@ -32,7 +32,13 @@
 ;;   mapping "operand name" to their possible types
 ;; attempts : (listof attempt?)
 (struct optimization-event (location operation type-dict attempts) #:transparent)
-(struct location (file line column script offset) #:transparent)
+(struct location (file line column script offset) #:transparent
+        #:methods gen:custom-write
+        [(define (write-proc location port _)
+           (fprintf port "~a:~a:~a"
+                    (location-file location)
+                    (location-line location)
+                    (location-column location)))])
 
 ;; parse-event : (listof string?) -> optimization-event?
 (define (parse-event e)
