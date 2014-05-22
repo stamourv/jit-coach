@@ -30,7 +30,7 @@
 ;; operation : "getprop" | "setprop"
 ;; type-dict : (dictof string? string?)
 ;;   mapping "operand name" to their possible types
-;; attempts : (listof string?) ;; TODO for now
+;; attempts : (listof attempt?)
 (struct optimization-event (location operation type-dict attempts) #:transparent)
 (struct location (file line column script offset) #:transparent)
 
@@ -78,7 +78,62 @@
                                 (string->number offset))
                       operation
                       type-dict
-                      attempts-log)) ;; TODO prune and parse that later
+                      (parse-attempts attempts-log)))
+
+
+;; strategy : string?
+;; TODO grammar is a bit inconsistent in logs. sometimes lists the operation
+;;   too, sometimes is a verb phrase, sometimes a noun. clean up
+(struct attempt (strategy) #:transparent)
+;; reason : string?
+(struct failure attempt (reason))
+(struct success attempt (details)) ; e.g. what sub-strategy succeeded
+;; TODO maybe not have sub-strategies, and consider each as a top-level
+;;  success/failure. currently, e.g., inlining a poly getprop is a success,
+;;  but it's less good than inlining a mono one. but that doesn't show up as
+;;  a failure
+
+;; given a list of lines that describe attempts at different implementation
+;; strategies for an operation, parse what succeeded, what failed, and why
+;; parse-attempts : (listof string?) -> (values (listof failure?) success?)
+(define (parse-attempts lines)
+  (when (empty? lines) ; shouldn't happen
+    (error "no attempts were made"))
+
+  ;; each attempt log start with "trying <strategy>", then a line describing
+  ;; success / failure
+  ;; Note: there may be cases where there's more than one failure / success
+  ;;   line. There are either leftovers from reporting multiple failures for
+  ;;   the same attempt when possible, or bugs. Either way, if that happens,
+  ;;   we should fix the logging. Reporting multiple causes for failures
+  ;;   *could* be useful, but let's not worry for now (plus that makes this
+  ;;   code much more complex)
+
+  ;; simple state machine, match a strategy line, then a result line, ad inf.
+  (define (parse-strategy ls)
+    (if (empty? ls)
+        '() ; done
+        (match (regexp-match "^COACH:    trying (.+)$" (first ls))
+          [(list _ strategy)
+           (parse-result strategy (rest ls))]
+          [_
+           (error "attempt log does not have the right structure" lines)])))
+  (define (parse-result strategy ls)
+    (cond [(regexp-match "^COACH:        success(, )?(.*)$" (first ls))
+           => (match-lambda [(list _ _ details)
+                             (cons (success strategy
+                                            (and (equal? details "") details))
+                                   (parse-strategy (rest ls)))])]
+          [(regexp-match "^COACH:        failure, (.+)$" (first ls))
+           => (match-lambda [(list _ reason)
+                             (cons (failure strategy reason)
+                                   (parse-strategy (rest ls)))])]
+          [else
+           (error "unexpected result line" (first ls))]))
+  (parse-strategy lines))
+
+
+;;;; reporting
 
 ;; group-by-location : (listof optimization-event?)
 ;;                       -> (listof (listof optimization-event?)
