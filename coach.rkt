@@ -249,24 +249,26 @@
     (match-define (success strategy details) a)
     (if details (format "~a (~a)" strategy details) strategy)))
 
-(struct regression (from-event to-event) #:transparent
+;; from-event, to-event : optimization-event? ; before and after regression
+;; got-better? : (or/c optimization-event? #f) ; event at which we got better
+(struct regression (from-event to-event got-better?) #:transparent
         #:methods gen:custom-write
         [(define (write-proc regression port _)
-           (fprintf port "from ~a to ~a\n"
-                    (regression-from-strategy regression)
-                    (regression-to-strategy regression))
+           (fprintf port "from ~a to ~a~a\n"
+                    (event-strategy (regression-from-event regression))
+                    (event-strategy (regression-to-event regression))
+                    (if (regression-got-better? regression)
+                        (format " (but eventually got back to ~a)"
+                                (event-strategy
+                                 (regression-got-better? regression)))
+                        ""))
            (fprintf port "causes:\n\n")
-           ;; TODO call the failure explanation logic, when it exists
            (for ([f (regression-new-failures regression)])
              ;; TODO put explain-failure in the printer for failures?
              ;;   actually, can't. also requires the enclosing event
              (fprintf port "~a"
                       (explain-failure f (regression-to-event regression)))))])
 
-(define (regression-from-strategy regression)
-  (event-strategy (regression-from-event regression)))
-(define (regression-to-strategy regression)
-  (event-strategy (regression-to-event regression)))
 (define (regression-new-failures regression)
   (define old-failures (event-failures (regression-from-event regression)))
   (define new-failures (event-failures (regression-to-event regression)))
@@ -279,26 +281,43 @@
 ;; detect-regression : (listof optimization-event?)
 ;;                       -> (or/c (listof success?) #f)
 ;; takes a list of events that affect a given location, and returns #f
-;; if the number of failures does not increase, or the list of strategies
-;; that were picked over time (in case worse strategies get picked over time)
+;; if the number of failures does not increase, or a list of regression events.
+;; also reports "local" regressions, that get fixed by subsequent compilations,
+;; but marks them specially
 ;; ASSUMPTION: more failures = worse strategy is picked
 ;;   this relies on, for a given operation, the same strategies being attempted
 ;;   in the same order every time.
 (define (detect-regression event-group)
-  (define-values (max-n-failures max-n-failures-event rev-regressions)
-    (for/fold ([max-n-failures (length (event-failures (first event-group)))]
-               [max-n-failures-event (first event-group)]
+  (define-values (prev-n-failures prev-event just-regressed? rev-regressions)
+    (for/fold ([prev-n-failures (length (event-failures (first event-group)))]
+               [prev-event (first event-group)]
+               [just-regressed? #f]
                [rev-regressions '()])
         ([e (rest event-group)])
       (define n-failures (length (event-failures e)))
-      (cond [(> n-failures max-n-failures) ; regression
+      (cond [(> n-failures prev-n-failures) ; regression
              (values n-failures
                      e
-                     (cons (regression max-n-failures-event e)
+                     #t
+                     (cons (regression prev-event e #f)
                            rev-regressions))]
+            [just-regressed?
+             (if (< n-failures prev-n-failures) ; are we getting better?
+                 (values n-failures ; yes, make note of it
+                         e
+                         #f
+                         (cons (match-let ([(regression from to _)
+                                            (first rev-regressions)])
+                                 (regression from to e)) ; we got better
+                               (rest rev-regressions)))
+                 (values n-failures ; no, just as bad
+                         e
+                         #t ; keep looking if we get better
+                         rev-regressions))]
             [else
-             (values max-n-failures
-                     max-n-failures-event
+             (values prev-n-failures
+                     e
+                     #f
                      rev-regressions)])))
   (and (not (empty? rev-regressions)) ; we actually did get worse
        (reverse rev-regressions)))
