@@ -2,6 +2,10 @@
 
 (require unstable/list)
 
+(define separator (make-string 80 #\-))
+(define (print-separator) (displayln separator))
+
+
 ;;;; parsing
 
 ;; first, split into optimization events
@@ -231,7 +235,8 @@
       (printf "flip-flopping detected at ~a\n"
               (optimization-event-location (first es)))
       (printf "  between: ~a\n  and: ~a\n\n"
-              (first flip-flop?) (second flip-flop?)))))
+              (first flip-flop?) (second flip-flop?))
+      (print-separator))))
 
 ;; TODO try a simpler one, that just checks for monotonicity (never see an old one again)
 
@@ -311,7 +316,8 @@
     (when regression?
       (printf "implementation regressed at ~a\n"
               (optimization-event-location (first es)))
-      (for-each displayln regression?))))
+      (for-each displayln regression?)
+      (print-separator))))
 
 
 ;;;; failure explanation
