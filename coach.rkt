@@ -186,6 +186,8 @@
 ;;   GCed (hard to tell what's still hot and/or useful), so need to
 ;;   start gathering info and compiling from scratch every time.
 ;;   (not the case for ||js code, though, but not relevant for us)
+;;   TODO will that always be the case, though? will compiles eventually
+;;     survive across GC? if so, may not want to assume that.
 (define (detect-flip-flop event-group)
 
   ;; we only care about type sets for `obj`, since it's the one
