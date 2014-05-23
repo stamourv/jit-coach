@@ -31,25 +31,32 @@
 ;; type-dict : (dictof string? string?)
 ;;   mapping "operand name" to their possible types
 ;; attempts : (listof attempt?)
-(struct optimization-event (location operation type-dict attempts) #:transparent)
-(struct location (file line column script offset) #:transparent
+(struct optimization-event (location operation property type-dict attempts)
+        #:transparent)
+;; file + line + column are not enough to disambiguate. script + offset is
+;; also includes operation + property, for printing
+(struct location (file line column script offset operation property)
+        #:transparent
         #:methods gen:custom-write
         [(define (write-proc location port _)
-           (fprintf port "~a:~a:~a"
+           (fprintf port "~a:~a:~a (~a ~a)"
                     (location-file location)
                     (location-line location)
-                    (location-column location)))])
+                    (location-column location)
+                    (location-operation location)
+                    (location-property location)))])
 
 ;; parse-event : (listof string?) -> optimization-event?
 (define (parse-event e)
 
   ;; first line is of the form:
-  ;; "COACH: optimizing <operation>: <file>:<line>:<column> #<script>:<offset>"
-  (match-define (list _ operation file line column script offset)
+  ;; "COACH: optimizing <operation> <property>: <file>:<line>:<column> #<script>:<offset>"
+  (match-define (list _ operation property file line column script offset)
     (regexp-match
-     "^COACH: optimizing ([^ ]+): ([^: ]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
+     ;; note: will choke on unusual file / property names
+     "^COACH: optimizing ([^ ]+) ([^: ]+): ([^: ]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
      (first e)))
-  (unless (and operation file line column script offset)
+  (unless (and operation property file line column script offset)
     (error "invalid log entry" (first e)))
 
   ;; type info is of the form:
@@ -89,8 +96,11 @@
                                 (string->number line)
                                 (string->number column)
                                 (string->number script)
-                                (string->number offset))
+                                (string->number offset)
+                                operation
+                                property)
                       operation
+                      property
                       type-dict
                       (parse-attempts attempts-log)))
 
@@ -209,8 +219,9 @@
       (error "can't detect flip-flopping of an empty group"))
     (define flip-flop? (detect-flip-flop es))
     (when flip-flop?
-      (printf "flip-flopping detected at ~a\n  between: ~a\n  and: ~a\n\n"
-              (optimization-event-location (first es))
+      (printf "flip-flopping detected at ~a\n"
+              (optimization-event-location (first es)))
+      (printf "  between: ~a\n  and: ~a\n\n"
               (first flip-flop?) (second flip-flop?)))))
 
 ;; TODO try a simpler one, that just checks for monotonicity (never see an old one again)
