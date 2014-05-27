@@ -192,6 +192,15 @@
 ;;   (not the case for ||js code, though, but not relevant for us)
 ;;   TODO will that always be the case, though? will compiles eventually
 ;;     survive across GC? if so, may not want to assume that.
+;; TODO flip-flopping is a problem at the *function* level. that is, the
+;;   whole function gets recompiled. *but* it will get reported for all
+;;   operations in the function (which is redundant) regardless of whether
+;;   that operation was actually responsible (which is BAD).
+;;   e.g.: deltablue, BinaryConstraint.prototype.output flip-flops
+;;     going back and forth beween 1 and 2 obj types, but we don't know
+;;     which property access is for these objects (can guess, based on code,
+;;     but at least one of the operations that are reported is a total red
+;;     herring)
 (define (detect-flip-flop event-group)
 
   ;; we only care about type sets for `obj`, since it's the one
