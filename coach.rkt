@@ -126,10 +126,7 @@
 ;;   too, sometimes is a verb phrase, sometimes a noun. clean up
 (struct attempt (strategy event) #:transparent)
 ;; reason : string?
-(struct failure attempt (reason) #:transparent
-        #:methods gen:custom-write
-        [(define (write-proc failure port _)
-           (fprintf port "~a" (explain-failure failure)))])
+(struct failure attempt (reason) #:transparent)
 ;; details: string? ; e.g. what sub-strategy succeeded
 (struct success attempt (details) #:transparent)
 ;; TODO maybe not have sub-strategies, and consider each as a top-level
@@ -286,7 +283,7 @@
                         ""))
            (fprintf port "causes:\n\n")
            (for ([f (regression-new-failures regression)])
-             (fprintf port "~a" f)))])
+             (fprintf port "~a" (explain-failure f))))])
 
 (define (regression-new-failures regression)
   (define old-failures (event-failures (regression-from-event regression)))
@@ -391,7 +388,7 @@
               (optimization-event-location (first es)))
       (printf "failures:\n\n")
       (for ([failure (consistently-bad-failures consistently-bad?)])
-        (printf "~a: ~a" (attempt-strategy failure) failure))
+        (printf "~a: ~a" (attempt-strategy failure) (explain-failure failure)))
       (print-separator))))
 
 
