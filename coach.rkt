@@ -367,7 +367,10 @@
     (error "no events for a location"))
   (define failuress (map event-failures events))
   (define representative (first failuress))
-  (and (foldl equal? representative (rest failuress)) ; all the same
+  (and (for/fold ([representative representative]) ; all the same
+           ([failures (rest failuress)])
+         (and (equal? representative failures)
+              representative))
        (not (empty? representative))
        (consistently-bad representative (length failuress))))
 
