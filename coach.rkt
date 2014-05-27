@@ -201,6 +201,10 @@
 ;;     which property access is for these objects (can guess, based on code,
 ;;     but at least one of the operations that are reported is a total red
 ;;     herring)
+;;   TODO maybe that's something that bailout logging could help with
+;;     we could get the cause for a recompilation, rather than inferring it
+;;     from the newly disabled optimizations
+;;     (first, figure out if fixing flip-flopping is actually worth it)
 (define (detect-flip-flop event-group)
 
   ;; we only care about type sets for `obj`, since it's the one
