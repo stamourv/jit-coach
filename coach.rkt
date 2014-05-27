@@ -279,7 +279,7 @@
   (drop new-failures (length old-failures)))
 
 ;; detect-regression : (listof optimization-event?)
-;;                       -> (or/c (listof success?) #f)
+;;                       -> (or/c (listof regression?) #f)
 ;; takes a list of events that affect a given location, and returns #f
 ;; if the number of failures does not increase, or a list of regression events.
 ;; also reports "local" regressions, that get fixed by subsequent compilations,
