@@ -341,10 +341,11 @@
 
 
 ;; detect-consistently-bad : (listof optimization-event?)
-;;                             -> (or/c (listof failure?) #f)
+;;                             -> (or/c consistently-bad #f)
 ;; takes a list of events that affect the same location, and returns a
 ;; list of failures if the same failure pattern happens every compilation
 ;; (i.e. we have found a consistent failure), or #f otherwise
+(struct consistently-bad (failures n-times))
 (define (detect-consistently-bad events)
   (when (empty? events)
     (error "no events for a location"))
@@ -352,7 +353,7 @@
   (define representative (first failuress))
   (and (foldl equal? representative (rest failuress)) ; all the same
        (not (empty? representative))
-       representative))
+       (consistently-bad representative (length failuress))))
 
 ;; report-consistently-bad : (listof optimization-event?) -> void?
 ;; takes a list of (ungrouped) events, and prints report of consistent issues
@@ -364,12 +365,13 @@
       (error "no optimization events for a location"))
     (define consistently-bad? (detect-consistently-bad es))
     (when consistently-bad?
-      (printf "consistently picking a sub-optimal implementation:\n")
+      (printf "always picking a sub-optimal implementation (~a times):\n"
+              (consistently-bad-n-times consistently-bad?))
       (printf "strategy: ~a\nat: ~a\n"
               (event-strategy (first es))
               (optimization-event-location (first es)))
       (printf "failures:\n\n")
-      (for ([failure consistently-bad?])
+      (for ([failure (consistently-bad-failures consistently-bad?)])
         (printf "~a: ~a"
                 (attempt-strategy failure)
                 (explain-failure failure (first es))))
