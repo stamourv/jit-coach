@@ -340,6 +340,42 @@
       (print-separator))))
 
 
+;; detect-consistently-bad : (listof optimization-event?)
+;;                             -> (or/c (listof failure?) #f)
+;; takes a list of events that affect the same location, and returns a
+;; list of failures if the same failure pattern happens every compilation
+;; (i.e. we have found a consistent failure), or #f otherwise
+(define (detect-consistently-bad events)
+  (when (empty? events)
+    (error "no events for a location"))
+  (define failuress (map event-failures events))
+  (define representative (first failuress))
+  (and (foldl equal? representative (rest failuress)) ; all the same
+       (not (empty? representative))
+       representative))
+
+;; report-consistently-bad : (listof optimization-event?) -> void?
+;; takes a list of (ungrouped) events, and prints report of consistent issues
+;; TODO abstract with other reporting functions
+(define (report-consistently-bad all-events)
+  (define by-location (group-by-location all-events))
+  (for ([es by-location])
+    (when (empty? es)
+      (error "no optimization events for a location"))
+    (define consistently-bad? (detect-consistently-bad es))
+    (when consistently-bad?
+      (printf "consistently picking a sub-optimal implementation:\n")
+      (printf "strategy: ~a\nat: ~a\n"
+              (event-strategy (first es))
+              (optimization-event-location (first es)))
+      (printf "failures:\n\n")
+      (for ([failure consistently-bad?])
+        (printf "~a: ~a"
+                (attempt-strategy failure)
+                (explain-failure failure (first es))))
+      (print-separator))))
+
+
 ;;;; failure explanation
 
 ;; explain-failure : failure? optimization-event? -> string?
@@ -396,5 +432,7 @@
 
   ;; (for-each displayln (optimization-event-attempts (first parsed-events)))
   (report-regressions parsed-events) ; one found in paper-example-poly3
+
+  (report-consistently-bad parsed-events)
 
   )
