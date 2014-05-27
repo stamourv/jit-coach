@@ -436,7 +436,7 @@
 
 
   ;; (detect-flip-flop (first (sort by-location > #:key length)))
-  (report-flip-flops parsed-events) ; one found in richards
+  (report-flip-flops parsed-events) ; one found in richards, 3 in deltablue
 
   ;; (for-each displayln (optimization-event-attempts (first parsed-events)))
   (report-regressions parsed-events) ; one found in paper-example-poly3
