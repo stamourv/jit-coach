@@ -36,7 +36,8 @@
 ;;   mapping "operand name" to their possible types
 ;; attempts : (listof attempt?)
 (struct optimization-event (location operation property type-dict attempts)
-        #:transparent)
+        #:transparent
+        #:mutable) ; so attempts can refer back to the event
 ;; file + line + column are not enough to disambiguate. script + offset is
 ;; also includes operation + property, for printing
 (struct location (file line column script offset operation property)
@@ -103,23 +104,27 @@
         (drop e 2) ; single line of type info + first line with general info
         (drop e 4))) ; three lines of type info
 
-  (optimization-event (location file
-                                (string->number line)
-                                (string->number column)
-                                (string->number script)
-                                (string->number offset)
-                                operation
-                                property)
-                      operation
-                      property
-                      type-dict
-                      (parse-attempts attempts-log)))
+  (define event
+    (optimization-event (location file
+                                  (string->number line)
+                                  (string->number column)
+                                  (string->number script)
+                                  (string->number offset)
+                                  operation
+                                  property)
+                        operation
+                        property
+                        type-dict
+                        #f)) ; filled below
+  (set-optimization-event-attempts! event (parse-attempts attempts-log event))
+  event)
 
 
 ;; strategy : string?
+;; event : optimization-event? ; the event during which this attempt was made
 ;; TODO grammar is a bit inconsistent in logs. sometimes lists the operation
 ;;   too, sometimes is a verb phrase, sometimes a noun. clean up
-(struct attempt (strategy) #:transparent)
+(struct attempt (strategy event) #:transparent)
 ;; reason : string?
 (struct failure attempt (reason) #:transparent)
 ;; details: string? ; e.g. what sub-strategy succeeded
@@ -132,7 +137,7 @@
 ;; given a list of lines that describe attempts at different implementation
 ;; strategies for an operation, parse what succeeded, what failed, and why
 ;; parse-attempts : (listof string?) -> (values (listof failure?) success?)
-(define (parse-attempts lines)
+(define (parse-attempts lines event)
   (when (empty? lines) ; shouldn't happen
     (error "no attempts were made"))
 
@@ -158,12 +163,13 @@
     (cond [(regexp-match "^COACH:        success(, )?(.*)$" (first ls))
            => (match-lambda [(list _ _ details)
                              (cons (success strategy
+                                            event
                                             (and (not (equal? details ""))
                                                  details))
                                    (parse-strategy (rest ls)))])]
           [(regexp-match "^COACH:        failure, (.+)$" (first ls))
            => (match-lambda [(list _ reason)
-                             (cons (failure strategy reason)
+                             (cons (failure strategy event reason)
                                    (parse-strategy (rest ls)))])]
           [else
            (error "unexpected result line" (first ls))]))
@@ -259,7 +265,7 @@
 (define (event-strategy event)
   (for/first ([a (optimization-event-attempts event)]
               #:when (success? a))
-    (match-define (success strategy details) a)
+    (match-define (success strategy event details) a)
     (if details (format "~a (~a)" strategy details) strategy)))
 
 ;; from-event, to-event : optimization-event? ; before and after regression
