@@ -336,6 +336,7 @@
       (printf "implementation regressed at ~a\n"
               (optimization-event-location (first es)))
       (for-each displayln regression?)
+      (newline)
       (print-separator))))
 
 
