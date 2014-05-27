@@ -216,8 +216,7 @@
   ;; we only care about type sets for `obj`, since it's the one
   ;; decisions are made on
   (define all-typesets
-    (remove-duplicates (for/list ([e event-group])
-                         (dict-ref (optimization-event-type-dict e) "obj"))))
+    (remove-duplicates (map event-object-type event-group)))
 
   ;; for now, do crude matching over traces with regexps
   (when (> (length all-typesets) 10)
@@ -228,9 +227,7 @@
       (values t s)))
   (define trace
     (list->string (for/list ([e event-group])
-                    (dict-ref typeset->char
-                              (dict-ref (optimization-event-type-dict e)
-                                        "obj")))))
+                    (dict-ref typeset->char (event-object-type e)))))
   ;; try all the combinations of typesets to flip-flop between
   (for*/first ([a all-typesets]
                [b (remove a all-typesets)] ; the two need to be distinct
@@ -395,6 +392,61 @@
       (print-separator))))
 
 
+;;;; reporting by object type
+
+;; Grouping reports by object types should allow a lot of merging
+;; (a lot of reports are related to the same object type).
+;; But, this only really makes sense for monomorphic operations
+;; (operations that fail because of polymorphism will still fail
+;; regardless of the changes we make to one of the types).
+;; Also, this will, of course, only consider operations (or failures)
+;; that we *observed* were related to that type. We won't see places
+;; where failure to see that type was the problem (e.g. non-executed
+;; code, that would have seen that type, but didn't so didn't know how
+;; to optimize).
+
+(define (event-object-type event)
+  (dict-ref (optimization-event-type-dict event) "obj"))
+
+;; group-by-object-type : (listof optimization-event?)
+;;                          -> (listof (listof optimization-event?)
+(define (group-by-object-type opt-events)
+  (define (single-object-type? event)
+    (regexp-match "^object\\[1\\]" (event-object-type event)))
+  (group-by event-object-type (filter single-object-type? opt-events)))
+
+;; report-by-object-type : (listof optimization-event?) -> void?
+;; takes a list of ungrouped events, and prints a by-object-type view
+;; of optimization failures
+(define (report-by-object-type all-events)
+  (define by-object-type (group-by-object-type all-events))
+  (for ([group by-object-type])
+    (define common-type (event-object-type (first group)))
+
+    ;; secondary grouping by failure type (currently counts both attempted
+    ;; strategy and cause of failure)
+    (define all-failures (append-map event-failures group))
+    (unless (empty? all-failures) ; only successes for that object type
+
+      (printf "failures for object type: ~a\n\n" common-type)
+      ;; TODO would really be nice to be able to print constructor location, or sth
+
+      (define by-failure-type
+        (group-by (lambda (f) (cons (attempt-strategy f)
+                                    (failure-reason f)))
+                  all-failures))
+      (for ([group by-failure-type])
+        (printf "strategy: ~a\nreason: ~a\n\n~aat:\n"
+                (attempt-strategy (first group))
+                (failure-reason (first group))
+                (explain-failure (first group)))
+        (for ([failure group])
+          (displayln (optimization-event-location (attempt-event failure))))
+        (newline))
+
+      (print-separator))))
+
+
 ;;;; failure explanation
 
 ;; explain-failure : failure? -> string?
@@ -461,5 +513,7 @@
   (report-regressions parsed-events) ; one found in paper-example-poly3
 
   (report-consistently-bad parsed-events)
+
+  (report-by-object-type parsed-events)
 
   )
