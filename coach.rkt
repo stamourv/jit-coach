@@ -126,7 +126,10 @@
 ;;   too, sometimes is a verb phrase, sometimes a noun. clean up
 (struct attempt (strategy event) #:transparent)
 ;; reason : string?
-(struct failure attempt (reason) #:transparent)
+(struct failure attempt (reason) #:transparent
+        #:methods gen:custom-write
+        [(define (write-proc failure port _)
+           (fprintf port "~a" (explain-failure failure)))])
 ;; details: string? ; e.g. what sub-strategy succeeded
 (struct success attempt (details) #:transparent)
 ;; TODO maybe not have sub-strategies, and consider each as a top-level
@@ -283,10 +286,7 @@
                         ""))
            (fprintf port "causes:\n\n")
            (for ([f (regression-new-failures regression)])
-             ;; TODO put explain-failure in the printer for failures?
-             ;;   actually, can't. also requires the enclosing event
-             (fprintf port "~a"
-                      (explain-failure f (regression-to-event regression)))))])
+             (fprintf port "~a" f)))])
 
 (define (regression-new-failures regression)
   (define old-failures (event-failures (regression-from-event regression)))
@@ -391,19 +391,17 @@
               (optimization-event-location (first es)))
       (printf "failures:\n\n")
       (for ([failure (consistently-bad-failures consistently-bad?)])
-        (printf "~a: ~a"
-                (attempt-strategy failure)
-                (explain-failure failure (first es))))
+        (printf "~a: ~a" (attempt-strategy failure) failure))
       (print-separator))))
 
 
 ;;;; failure explanation
 
-;; explain-failure : failure? optimization-event? -> string?
-;; given a failure that happened during the given event, try to sketch
-;; an explanation for the user
+;; explain-failure : failure? -> string?
+;; given a failure, try to sketch an explanation for the user
 ;; done on a case-by-case basis, work in progress.
-(define (explain-failure failure event)
+(define (explain-failure failure)
+  (define event (attempt-event failure))
   (match (failure-reason failure)
 
     ["would require a barrier"
