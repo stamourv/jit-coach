@@ -371,6 +371,11 @@
   (define representative (first failuress))
   (and (all-the-same? failuress)
        (not (empty? representative)) ; actually has failures
+       ;; operation is not monomorphic.
+       ;; those failures are worth reporting, but they're reported better
+       ;; by the by-object-type view.
+       ;; other operations are not so lucky, and must be reported here.
+       (not (single-object-type? (attempt-event (first representative))))
        (consistently-bad representative (length failuress))))
 
 ;; report-consistently-bad : (listof optimization-event?) -> void?
@@ -409,12 +414,12 @@
 
 (define (event-object-type event)
   (dict-ref (optimization-event-type-dict event) "obj"))
+(define (single-object-type? event)
+  (regexp-match "^object\\[1\\]" (event-object-type event)))
 
 ;; group-by-object-type : (listof optimization-event?)
 ;;                          -> (listof (listof optimization-event?)
 (define (group-by-object-type opt-events)
-  (define (single-object-type? event)
-    (regexp-match "^object\\[1\\]" (event-object-type event)))
   (group-by event-object-type (filter single-object-type? opt-events)))
 
 ;; report-by-object-type : (listof optimization-event?) -> void?
