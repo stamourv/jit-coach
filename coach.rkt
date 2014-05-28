@@ -2,12 +2,7 @@
 
 (require unstable/list)
 
-(require "structs.rkt" "parsing.rkt" "recommendations.rkt")
-
-(define separator (make-string 80 #\-))
-(define (print-separator) (displayln separator))
-
-
+(require "structs.rkt" "parsing.rkt" "recommendations.rkt" "utils.rkt")
 
 
 ;;;; reporting
