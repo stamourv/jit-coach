@@ -50,7 +50,7 @@
 
 (module+ main
 
-  (define n 3)
+  (define n 10)
 
   (define out (for/list ([i n]) (printf "running set ~a\n" i) (run-once)))
   (define results (parse-results out))
