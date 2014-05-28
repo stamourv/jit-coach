@@ -1,0 +1,7 @@
+Benchmarks to measure the effectiveness of the JIT coach's recommendations.
+
+Uses some of the Octane benchmarks [TODO link] (not all make sense for us).
+
+Also reuses part of the Octane infrastructure for benchmarking.
+
+Kept in a separate repo from the coach to avoid any licencing issues.
