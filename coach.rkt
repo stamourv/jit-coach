@@ -488,8 +488,10 @@
     ["property not in a fixed slot"
      (string-append
       "This property is not guaranteed to always be in the same location.\n"
-      "Are you initializing it in multiple locations?\n"
-      "If so, try initializing it in only one.\n\n")]
+      "Are you initializing fields in a different order in different places?\n"
+      "  If so, try to stick to the same order.\n"
+      "Are you initializing it in multiple places?\n"
+      "  If so, try initializing it always in the same place.\n\n")]
 
     [(? (lambda (x) (regexp-match "^([0-9]+) possible object types$" x)) _)
      (string-append
