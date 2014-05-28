@@ -352,6 +352,11 @@
       (newline)
       (print-separator))))
 
+(define (all-the-same? l)
+  (cond [(empty? l) #t]
+        [else
+         (define head (first l))
+         (andmap (lambda (x) (equal? x head)) (rest l))]))
 
 ;; detect-consistently-bad : (listof optimization-event?)
 ;;                             -> (or/c consistently-bad #f)
@@ -364,11 +369,8 @@
     (error "no events for a location"))
   (define failuress (map event-failures events))
   (define representative (first failuress))
-  (and (for/fold ([representative representative]) ; all the same
-           ([failures (rest failuress)])
-         (and (equal? representative failures)
-              representative))
-       (not (empty? representative))
+  (and (all-the-same? failuress)
+       (not (empty? representative)) ; actually has failures
        (consistently-bad representative (length failuress))))
 
 ;; report-consistently-bad : (listof optimization-event?) -> void?
