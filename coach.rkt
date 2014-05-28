@@ -471,18 +471,24 @@
      (define unexpected-type
        (dict-ref (optimization-event-type-dict event) "value"))
      (string-append
-      (format "so far, this property has held values of type:\n    ~a\n"
+      (format "So far, this property has held values of type:\n    ~a\n"
               expected-types)
       (format "but this operation would assign a value of type:\n    ~a\n"
               unexpected-type)
       "which causes a type barrier to be added, which disables some "
-      "optimizations\n\n")]
+      "optimizations.\n\n")]
 
     ["property not in a fixed slot"
      (string-append
-      "this property is not guaranteed to always be in the same location\n"
-      "are you initializing it in multiple locations?\n"
-      "if so, try initializing it in only one\n\n")]
+      "This property is not guaranteed to always be in the same location.\n"
+      "Are you initializing it in multiple locations?\n"
+      "If so, try initializing it in only one.\n\n")]
+
+    [(? (lambda (x) (regexp-match "^([0-9]+) possible object types$" x)) _)
+     (string-append
+      "This operation is polymorphic. Specifically, it sees these types:\n"
+      (format "    ~a\n" (event-object-type event))
+      "It would be optimized better if it was monomorphic.\n\n")]
 
     [reason ;; TODO implement more
      (format "~a (no explanation implemented yet!)\n\n" reason)]))
