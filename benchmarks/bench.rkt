@@ -23,12 +23,15 @@
 
   (for ([s ss])
     (match-define (list _
-                        richards1 richards2 richards3)
+                        richards1 richards2 richards3
+                        deltablue1 deltablue2)
       (regexp-match
        (string-append "^"
                       "Richards: ([0-9]+)\n"
                       "Richards[^:]+: ([0-9]+)\n"
-                      "Richards[^:]+: ([0-9]+)\n")
+                      "Richards[^:]+: ([0-9]+)\n"
+                      "DeltaBlue: ([0-9]+)\n"
+                      "DeltaBlue[^:]+: ([0-9]+)\n")
        s))
     ;; TODO oops, can't use full version name for each bench, because versions
     ;;   are different for each bench. just use number for now, and provide a
@@ -36,6 +39,8 @@
     (dict-update! sums '("Richards" 1) (add richards1) '())
     (dict-update! sums '("Richards" 2) (add richards2) '())
     (dict-update! sums '("Richards" 3) (add richards3) '())
+    (dict-update! sums '("DeltaBlue" 1) (add deltablue1) '())
+    (dict-update! sums '("DeltaBlue" 2) (add deltablue2) '())
     )
 
   ;; make order more predictable than hashing order
