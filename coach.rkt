@@ -447,8 +447,15 @@
                 (attempt-strategy (first group))
                 (failure-reason (first group))
                 (explain-failure (first group)))
-        (for ([failure group])
-          (displayln (optimization-event-location (attempt-event failure))))
+        (define by-location
+          (group-by (lambda (f) (optimization-event-location (attempt-event f)))
+                    group))
+        ;; TODO also check whether that failure happens across all compiles
+        ;;   -> for that, events would need to know their siblings by location
+        (for ([loc (sort by-location > #:key length)])
+          (printf "~a x ~a\n"
+                  (length loc)
+                  (optimization-event-location (attempt-event (first loc)))))
         (newline))
 
       (print-separator))))
