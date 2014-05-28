@@ -359,12 +359,15 @@
          (andmap (lambda (x) (equal? x head)) (rest l))]))
 
 ;; detect-consistently-bad : (listof optimization-event?)
+;;                           [#:monomorphic? any/c #f]
 ;;                             -> (or/c consistently-bad #f)
 ;; takes a list of events that affect the same location, and returns a
 ;; list of failures if the same failure pattern happens every compilation
 ;; (i.e. we have found a consistent failure), or #f otherwise
+;; if the #:monomorphic? argument is non-#f, also detect failures for
+;; monomorphic operations (otherwise don't, and let some other pass report them)
 (struct consistently-bad (failures n-times))
-(define (detect-consistently-bad events)
+(define (detect-consistently-bad events #:monomorphic? [monomorphic? #f])
   (when (empty? events)
     (error "no events for a location"))
   (define failuress (map event-failures events))
@@ -375,7 +378,8 @@
        ;; those failures are worth reporting, but they're reported better
        ;; by the by-object-type view.
        ;; other operations are not so lucky, and must be reported here.
-       (not (single-object-type? (attempt-event (first representative))))
+       (or monomorphic? ; show them anyway
+           (not (single-object-type? (attempt-event (first representative)))))
        (consistently-bad representative (length failuress))))
 
 ;; report-consistently-bad : (listof optimization-event?) -> void?
