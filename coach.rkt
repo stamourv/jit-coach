@@ -10,13 +10,9 @@
   (define log (file->lines log-file))
   (define parsed-events (log->events log))
 
-  (report-flip-flops parsed-events) ; one found in richards, 3 in deltablue
-
-  ;; (for-each displayln (optimization-event-attempts (first parsed-events)))
-  (report-regressions parsed-events) ; one found in paper-example-poly3
-
+  (report-flip-flops parsed-events)
+  (report-regressions parsed-events)
   (report-consistently-bad parsed-events)
-
   (report-by-object-type parsed-events)
 
   )
