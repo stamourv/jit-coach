@@ -43,15 +43,16 @@
     (dict-update! sums '("DeltaBlue" 2) (add deltablue2) '())
     )
 
-  ;; make order more predictable than hashing order
-  (define sorted
-    (sort (dict-map sums cons)
-          < #:key cadar)) ; e.g. 1 in Richards 1
-
-  (for/list ([(bench+version times) (in-pairs sorted)])
-    (benchmark-result (first bench+version)
-                      (rest bench+version)
-                      times)))
+  ;; not all benchmarks have the same # of versions
+  ;; pad with 0s for those who have fewer than the max, and sort in a
+  ;; sensible order to avoid screwing up plot grouping
+  (define max-n-versions (apply max (map second (dict-keys sums))))
+  (define benchs (remove-duplicates (map first (dict-keys sums))))
+  (for*/list ([b benchs]
+                [i max-n-versions])
+      (benchmark-result b
+                        (list (add1 i))
+                        (dict-ref! sums (list b (add1 i)) '(0)))))
 
 (module+ main
 
@@ -77,7 +78,7 @@
      '(1) ; normalize to first version
      results))
 
-  (plot-file renderer "plot.pdf"
+  (plot-file (list renderer (y-tick-lines)) "plot.pdf"
              #:x-label #f #:y-label "Score (higher is better)")
 
   )
