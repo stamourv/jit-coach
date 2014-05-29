@@ -25,7 +25,7 @@
     (match-define (list _
                         richards1 richards2 richards3
                         deltablue1 deltablue2
-                        raytrace1 raytrace2 raytrace3 raytrace4)
+                        raytrace1 raytrace2 raytrace3 raytrace4 raytrace5)
       (regexp-match
        (string-append "^"
                       "Richards: ([0-9]+)\n"
@@ -34,6 +34,7 @@
                       "DeltaBlue: ([0-9]+)\n"
                       "DeltaBlue[^:]+: ([0-9]+)\n"
                       "RayTrace: ([0-9]+)\n"
+                      "RayTrace[^:]+: ([0-9]+)\n"
                       "RayTrace[^:]+: ([0-9]+)\n"
                       "RayTrace[^:]+: ([0-9]+)\n"
                       "RayTrace[^:]+: ([0-9]+)\n")
@@ -50,6 +51,7 @@
     (dict-update! sums '("RayTrace" 2) (add raytrace2) '())
     (dict-update! sums '("RayTrace" 3) (add raytrace3) '())
     (dict-update! sums '("RayTrace" 4) (add raytrace4) '())
+    (dict-update! sums '("RayTrace" 5) (add raytrace5) '())
     )
 
   ;; not all benchmarks have the same # of versions

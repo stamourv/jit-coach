@@ -23,6 +23,7 @@ RayTrace: 1- baseline
           2- IntersectionInfo w/o class system
           3- IntersectionInfo.isHit on object
           4- reordered Material fields
+          5- #2 + #4
 
 
 Notes:

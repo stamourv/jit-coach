@@ -37,6 +37,7 @@ load(base_dir + 'raytrace.js');
 load(base_dir + 'raytrace2.js');
 load(base_dir + 'raytrace3.js');
 load(base_dir + 'raytrace4.js');
+load(base_dir + 'raytrace5.js');
 // load(base_dir + 'crypto.js');
 // load(base_dir + 'earley-boyer.js');
 // load(base_dir + 'regexp.js');
