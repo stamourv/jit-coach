@@ -882,6 +882,6 @@ function deltaBlue() {
     return my;
 }());
 
-var DeltaBlue2 = new BenchmarkSuite('DeltaBlue [singleton -> globals]', [66118], [
+var DeltaBlue2 = new BenchmarkSuite('DeltaBlue [singleton Direction -> globals]', [66118], [
   new Benchmark('DeltaBlue', true, false, 4400, DeltaBlueMod2.run)
 ]);

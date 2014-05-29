@@ -13,6 +13,18 @@ To run:
 - open plot.pdf
 
 
+Versions summary:
+Richards: 1- baseline
+          2- fixed location for TaskControlBlock.state
+          3- remove packet queue flip-flopping
+DeltaBlue: 1- baseline
+           2- singleton Direction -> globals
+RayTrace: 1- baseline
+          2- IntersectionInfo w/o class system
+          3- IntersectionInfo.isHit on object
+          4- reordered Material fields
+
+
 Notes:
 - because multiple versions of the same benchmark exist, they must use the
   module pattern to avoid conflicting. That seems to add some overhead (i.e.
