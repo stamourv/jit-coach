@@ -88,6 +88,6 @@
      results))
 
   (plot-file (list renderer (y-tick-lines)) "plot.pdf"
-             #:x-label #f #:y-label "Score (higher is better)")
+             #:x-label #f #:y-label "Normalized score (higher is better)")
 
   )
