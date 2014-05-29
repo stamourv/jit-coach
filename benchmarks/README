@@ -5,3 +5,15 @@ Uses some of the Octane benchmarks [TODO link] (not all make sense for us).
 Also reuses part of the Octane infrastructure for benchmarking.
 
 Kept in a separate repo from the coach to avoid any licencing issues.
+
+
+To run:
+- raco pkg install benchmark
+- racket bench.rkt
+- open plot.pdf
+
+
+Notes:
+- because multiple versions of the same benchmark exist, they must use the
+  module pattern to avoid conflicting. That seems to add some overhead (i.e.
+  it reduces scores a bit), but that should be consistent across versions.
