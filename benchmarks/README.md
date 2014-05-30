@@ -13,16 +13,19 @@ Also reuses part of the Octane infrastructure for benchmarking.
 
 
 ### Versions summary
-## Richards:
+
+#### Richards:
   1. baseline
   2. fixed location for `TaskControlBlock.state`
   3. remove packet queue flip-flopping
-## DeltaBlue:
+
+#### DeltaBlue:
   1. baseline
   2. singleton `Direction` → globals
   3. singleton `Strength` → globals
   4. monomorphic `BinaryConstraint.output`
-## RayTrace:
+
+#### RayTrace:
   1. baseline
   2. `IntersectionInfo` w/o class system
   3. `IntersectionInfo.isHit` on object
