@@ -8,6 +8,7 @@ Also reuses part of the Octane infrastructure for benchmarking.
 
 ### To run:
 * Install the Racket benchmarking library: `raco pkg install benchmark`
+* Make sure you have a `js` in your path, that it's an optimized build, and that it doesn't have optimization logging.
 * Run the benchmarks: `racket bench.rkt`
 * Open `plot.pdf`
 
