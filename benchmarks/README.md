@@ -26,6 +26,7 @@ Also reuses part of the Octane infrastructure for benchmarking.
   3. singleton `Strength` → globals
   4. monomorphic `BinaryConstraint.output`
   5. #2 + #3 + #4
+  6. #5 + monomorphic `UnaryConstraint.isSatisfied`
 
 #### RayTrace:
   1. baseline

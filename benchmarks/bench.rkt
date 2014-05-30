@@ -22,16 +22,18 @@
   (define ((add inc) stored) (cons (string->number inc) stored))
 
   (for ([s ss])
-    (match-define (list _
-                        richards1 richards2 richards3
-                        deltablue1 deltablue2 deltablue3 deltablue4 deltablue5
-                        raytrace1 raytrace2 raytrace3 raytrace4 raytrace5)
+    (match-define
+        (list _
+              richards1 richards2 richards3
+              deltablue1 deltablue2 deltablue3 deltablue4 deltablue5 deltablue6
+              raytrace1 raytrace2 raytrace3 raytrace4 raytrace5)
       (regexp-match
        (string-append "^"
                       "Richards: ([0-9]+)\n"
                       "Richards[^:]+: ([0-9]+)\n"
                       "Richards[^:]+: ([0-9]+)\n"
                       "DeltaBlue: ([0-9]+)\n"
+                      "DeltaBlue[^:]+: ([0-9]+)\n"
                       "DeltaBlue[^:]+: ([0-9]+)\n"
                       "DeltaBlue[^:]+: ([0-9]+)\n"
                       "DeltaBlue[^:]+: ([0-9]+)\n"
@@ -53,6 +55,7 @@
     (dict-update! sums '("DeltaBlue" 3) (add deltablue3) '())
     (dict-update! sums '("DeltaBlue" 4) (add deltablue4) '())
     (dict-update! sums '("DeltaBlue" 5) (add deltablue5) '())
+    (dict-update! sums '("DeltaBlue" 6) (add deltablue6) '())
     (dict-update! sums '("RayTrace" 1) (add raytrace1) '())
     (dict-update! sums '("RayTrace" 2) (add raytrace2) '())
     (dict-update! sums '("RayTrace" 3) (add raytrace3) '())
