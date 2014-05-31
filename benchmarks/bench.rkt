@@ -54,7 +54,6 @@
   [plot-y-ticks (linear-ticks #:divisors '(5 2))]
   [plot-y-far-ticks no-ticks]
   [benchmark-show-legend? #f]
-  ;; [current-benchmark-color-scheme black-white-color-scheme-short]
   [error-bar-color "black"]
   [error-bar-alpha 1]
   [error-bar-line-width 1]
