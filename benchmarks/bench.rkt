@@ -21,47 +21,16 @@
   (define sums (make-hash)) ; maps (bench version) to sum of time
   (define ((add inc) stored) (cons (string->number inc) stored))
 
+  ;; TODO oops, can't use full version name for each bench, because versions
+  ;;   are different for each bench. just use number for now, and provide a
+  ;;   mapping somewhere
   (for ([s ss])
-    (match-define
-        (list _
-              richards1 richards2 richards3
-              deltablue1 deltablue2 deltablue3 deltablue4 deltablue5 deltablue6
-              raytrace1 raytrace2 raytrace3 raytrace4 raytrace5)
-      (regexp-match
-       (string-append "^"
-                      "Richards: ([0-9]+)\n"
-                      "Richards[^:]+: ([0-9]+)\n"
-                      "Richards[^:]+: ([0-9]+)\n"
-                      "DeltaBlue: ([0-9]+)\n"
-                      "DeltaBlue[^:]+: ([0-9]+)\n"
-                      "DeltaBlue[^:]+: ([0-9]+)\n"
-                      "DeltaBlue[^:]+: ([0-9]+)\n"
-                      "DeltaBlue[^:]+: ([0-9]+)\n"
-                      "DeltaBlue[^:]+: ([0-9]+)\n"
-                      "RayTrace: ([0-9]+)\n"
-                      "RayTrace[^:]+: ([0-9]+)\n"
-                      "RayTrace[^:]+: ([0-9]+)\n"
-                      "RayTrace[^:]+: ([0-9]+)\n"
-                      "RayTrace[^:]+: ([0-9]+)\n")
-       s))
-    ;; TODO oops, can't use full version name for each bench, because versions
-    ;;   are different for each bench. just use number for now, and provide a
-    ;;   mapping somewhere
-    (dict-update! sums '("Richards" 1) (add richards1) '())
-    (dict-update! sums '("Richards" 2) (add richards2) '())
-    (dict-update! sums '("Richards" 3) (add richards3) '())
-    (dict-update! sums '("DeltaBlue" 1) (add deltablue1) '())
-    (dict-update! sums '("DeltaBlue" 2) (add deltablue2) '())
-    (dict-update! sums '("DeltaBlue" 3) (add deltablue3) '())
-    (dict-update! sums '("DeltaBlue" 4) (add deltablue4) '())
-    (dict-update! sums '("DeltaBlue" 5) (add deltablue5) '())
-    (dict-update! sums '("DeltaBlue" 6) (add deltablue6) '())
-    (dict-update! sums '("RayTrace" 1) (add raytrace1) '())
-    (dict-update! sums '("RayTrace" 2) (add raytrace2) '())
-    (dict-update! sums '("RayTrace" 3) (add raytrace3) '())
-    (dict-update! sums '("RayTrace" 4) (add raytrace4) '())
-    (dict-update! sums '("RayTrace" 5) (add raytrace5) '())
-    )
+    (for ([bench '("Richards" "DeltaBlue" "RayTrace")]
+          #:when #t ; nest loop
+          [line (regexp-match* (string-append bench "[^:]*: [0-9]+\n") s)]
+          [i    (in-naturals)])
+      (match-define (list _ time) (regexp-match ": ([0-9]+)\n$" line))
+      (dict-update! sums (list bench i) (add time) '())))
 
   ;; not all benchmarks have the same # of versions
   ;; pad with 0s for those who have fewer than the max, and sort in a
@@ -69,10 +38,10 @@
   (define max-n-versions (apply max (map second (dict-keys sums))))
   (define benchs (remove-duplicates (map first (dict-keys sums))))
   (for*/list ([b benchs]
-                [i max-n-versions])
-      (benchmark-result b
-                        (list (add1 i))
-                        (dict-ref! sums (list b (add1 i)) '(0)))))
+              [i max-n-versions])
+    (benchmark-result b
+                      (list i)
+                      (dict-ref! sums (list b i) '(0)))))
 
 (module+ main
 
@@ -95,7 +64,7 @@
 
   (define renderer
     (render-benchmark-alts
-     '(1) ; normalize to first version
+     '(0) ; normalize to first version
      results))
 
   (plot-file (list renderer (y-tick-lines)) "plot.pdf"
