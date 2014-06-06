@@ -26,7 +26,7 @@
   ;;   mapping somewhere
   (for ([s ss])
     (for ([bench '("Richards" "DeltaBlue" "RayTrace")])
-      (for ([line (regexp-match* (string-append bench "[^:]*: [0-9]+\n") s)]
+      (for ([line (regexp-match* (string-append bench "^[^:]*: [0-9]+\n") s)]
             [i    (in-naturals)])
         (match-define (list _ time) (regexp-match ": ([0-9]+)\n$" line))
         (dict-update! scores (list bench i) (add time) '()))))
