@@ -25,12 +25,11 @@
   ;;   are different for each bench. just use number for now, and provide a
   ;;   mapping somewhere
   (for ([s ss])
-    (for ([bench '("Richards" "DeltaBlue" "RayTrace")]
-          #:when #t ; nest loop
-          [line (regexp-match* (string-append bench "[^:]*: [0-9]+\n") s)]
-          [i    (in-naturals)])
-      (match-define (list _ time) (regexp-match ": ([0-9]+)\n$" line))
-      (dict-update! scores (list bench i) (add time) '())))
+    (for ([bench '("Richards" "DeltaBlue" "RayTrace")])
+      (for ([line (regexp-match* (string-append bench "[^:]*: [0-9]+\n") s)]
+            [i    (in-naturals)])
+        (match-define (list _ time) (regexp-match ": ([0-9]+)\n$" line))
+        (dict-update! scores (list bench i) (add time) '()))))
 
   ;; not all benchmarks have the same # of versions
   ;; pad with 0s for those who have fewer than the max, and sort in a
