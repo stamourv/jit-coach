@@ -13,7 +13,9 @@
 
 (define (run-once)
   (with-output-to-string
-    (lambda () (system (format "js ~a/run.js" (path->string here))))))
+    (lambda ()
+      (parameterize ([current-directory here])
+        (system (format "js ~a/run.js" (path->string here)))))))
 
 ;; takes results from all the runs
 ;; returns a list of benchmark-result structs
