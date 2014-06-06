@@ -18,7 +18,7 @@
 ;; takes results from all the runs
 ;; returns a list of benchmark-result structs
 (define (parse-results ss)
-  (define sums (make-hash)) ; maps (bench version) to sum of time
+  (define scores (make-hash)) ; maps (bench version) to list of scores
   (define ((add inc) stored) (cons (string->number inc) stored))
 
   ;; TODO oops, can't use full version name for each bench, because versions
@@ -30,18 +30,18 @@
           [line (regexp-match* (string-append bench "[^:]*: [0-9]+\n") s)]
           [i    (in-naturals)])
       (match-define (list _ time) (regexp-match ": ([0-9]+)\n$" line))
-      (dict-update! sums (list bench i) (add time) '())))
+      (dict-update! scores (list bench i) (add time) '())))
 
   ;; not all benchmarks have the same # of versions
   ;; pad with 0s for those who have fewer than the max, and sort in a
   ;; sensible order to avoid screwing up plot grouping
-  (define max-n-versions (apply max (map second (dict-keys sums))))
-  (define benchs (remove-duplicates (map first (dict-keys sums))))
+  (define max-n-versions (apply max (map second (dict-keys scores))))
+  (define benchs (remove-duplicates (map first (dict-keys scores))))
   (for*/list ([b benchs]
               [i max-n-versions])
     (benchmark-result b
                       (list i)
-                      (dict-ref! sums (list b i) '(0)))))
+                      (dict-ref! scores (list b i) '(0)))))
 
 (module+ main
 
