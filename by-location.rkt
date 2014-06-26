@@ -55,11 +55,12 @@
     (remove-duplicates (map event-object-type event-group)))
 
   ;; for now, do crude matching over traces with regexps
-  (when (> (length all-typesets) 10)
+  (define chars "0123456789abcdefghijklmnopqrstuvwxyz")
+  (when (> (length all-typesets) (string-length chars))
     (error "too many typesets (need less stupid matching)" all-typesets))
   (define typeset->char
     (for/hash ([t all-typesets]
-               [s (in-string "0123456789")])
+               [s (in-string chars)])
       (values t s)))
   (define trace
     (list->string (for/list ([e event-group])
