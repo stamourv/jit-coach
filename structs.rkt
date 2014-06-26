@@ -64,3 +64,8 @@
               #:when (success? a))
     (match-define (success strategy event details) a)
     (if details (format "~a (~a)" strategy details) strategy)))
+
+
+;; location : location?
+;; kind : string?
+(struct bailout (location kind) #:transparent)

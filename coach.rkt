@@ -15,4 +15,7 @@
   (report-consistently-bad parsed-events)
   (report-by-object-type parsed-events)
 
+  ;; (define bailouts (log->bailouts log)) ;; TODO disabled for now, parsing is incomplete
+  ;; (for-each displayln bailouts) ;; TODO better reporting
+
   )

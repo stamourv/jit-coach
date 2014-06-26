@@ -4,12 +4,20 @@
 
 (require "structs.rkt")
 
+(provide log->events log->bailouts)
+
+
 ;; will get replaced when we have a proper API to IonMonkey
 
+(define (log-line-bailout? line)
+  (regexp-match "^COACH: bailout:" line))
+
 ;; log->events : (listof string?) -> (listof optimization-event?)
-(provide log->events)
 (define (log->events log)
-  (map parse-event (log->optimization-events log)))
+  (map parse-event
+       (log->optimization-events
+        ;; handle bailouts separately
+        (filter (negate log-line-bailout?) log))))
 
 ;; first, split into optimization events
 ;; ASSUMPTION: all the logs that come after a "COACH: optimizing ..."
@@ -32,6 +40,8 @@
   (reverse (cons (reverse rev-current-event)
                  rev-events)))
 
+(define location-regexp "([^:]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)")
+
 ;; second, parse location (and maybe some general info)
 ;; parse-event : (listof string?) -> optimization-event?
 (define (parse-event e)
@@ -41,7 +51,9 @@
   (match-define (list _ operation property file line column script offset)
     (regexp-match
      ;; note: will choke on unusual file / property names
-     "^COACH: optimizing ([^ ]+) ([^: ]+): ([^: ]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
+     (string-append "^COACH: optimizing ([^ ]+) ([^: ]+): "
+                    location-regexp
+                    "$")
      (first e)))
   (unless (and operation property file line column script offset)
     (error "invalid log entry" (first e)))
@@ -135,3 +147,33 @@
           [else
            (error "unexpected result line" (first ls))]))
   (parse-strategy lines))
+
+
+;; log->events : (listof string?) -> (listof bailout?)
+(define (log->bailouts log)
+  (map parse-bailout (filter log-line-bailout? log)))
+
+;; parse-bailout : string? -> bailout?
+(define (parse-bailout l)
+  (printf "trying to parse: ~s\n" l) ;; TODO
+  (match l
+    [(list _ at/after file line column script offset kind) (void)]
+    [_ (error "can't parse" l)]) ;; TODO
+  (match-define (list _ at/after file line column script offset kind)
+    (regexp-match
+     ;; note: will choke on unusual file / property names
+     (string-append
+      "^COACH: bailout: resuming ([a-z]+) " ;; TODO there's now 2 different kinds of bailout lines
+      location-regexp ;; TODO better reuse than that
+      " kind: (.*)$")
+     l))
+  (bailout (location file
+                     (string->number line)
+                     (string->number column)
+                     (string->number script)
+                     (string->number offset)
+                     #f ; these don't make as much sense for bailouts
+                     #f)
+           kind))
+;; TODO can we get any more info from a bailout?
+;;   maybe whether it caused invalidation?
