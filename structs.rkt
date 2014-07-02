@@ -42,13 +42,57 @@
 
 ;; strategy : string?
 ;; event : optimization-event? ; the event during which this attempt was made
-(struct attempt (strategy event) #:transparent)
+(struct attempt (strategy event) #:transparent
+        #:methods gen:equal+hash
+        [(define (equal-proc x y =?)
+           ;; Don't look at the event. We want to equate attempts from
+           ;; different events.
+           ;; TODO does it make sense to store the event, then? as long as
+           ;;   they're identical, I guess? (which should be the case for
+           ;;   compile merging)
+           ;; TODO or maybe could use =? for that? would it do cycle detection?
+           (=?  (attempt-strategy x)
+                (attempt-strategy y)))
+         (define (hash-proc x h)
+           (+ (h (attempt-strategy x))
+              (h (attempt-event    x))))
+         (define (hash2-proc x h)
+           (* (h (attempt-strategy x))
+              (h (attempt-event    x))))])
 
 ;; reason : string?
-(struct failure attempt (reason) #:transparent)
+(struct failure attempt (reason) #:transparent
+        #:methods gen:equal+hash
+        [(define (equal-proc x y =?)
+           (and (=?  (attempt-strategy x)
+                     (attempt-strategy y))
+                (=?  (failure-reason x)
+                     (failure-reason y))))
+         (define (hash-proc x h)
+           (+ (h (attempt-strategy x))
+              (h (attempt-event    x))
+              (h (failure-reason   x))))
+         (define (hash2-proc x h)
+           (* (h (attempt-strategy x))
+              (h (attempt-event    x))
+              (h (failure-reason   x))))])
 
 ;; details: string? ; e.g. what sub-strategy succeeded
-(struct success attempt (details) #:transparent)
+(struct success attempt (details) #:transparent
+        #:methods gen:equal+hash
+        [(define (equal-proc x y =?)
+           (and (=?  (attempt-strategy x)
+                     (attempt-strategy y))
+                (=?  (success-details x)
+                     (success-details y))))
+         (define (hash-proc x h)
+           (+ (h (attempt-strategy x))
+              (h (attempt-event    x))
+              (h (success-details  x))))
+         (define (hash2-proc x h)
+           (* (h (attempt-strategy x))
+              (h (attempt-event    x))
+              (h (success-details  x))))])
 ;; TODO maybe not have sub-strategies, and consider each as a top-level
 ;;  success/failure. currently, e.g., inlining a poly getprop is a success,
 ;;  but it's less good than inlining a mono one. but that doesn't show up as
