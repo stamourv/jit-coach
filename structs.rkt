@@ -108,3 +108,14 @@
               #:when (success? a))
     (match-define (success strategy event details) a)
     (if details (format "~a (~a)" strategy details) strategy)))
+
+
+;; Specific compiled version of a script, or set of identical compiled versions.
+;; Includes the time spent executing it (both self and total time) and the
+;; optimization events from that compile.
+(struct compile (location-string ; string? ; from samples. unknown format
+                 self-time ; flonum?
+                 total-time ; flonum?
+                 events) ; (listof optimization-event?)
+        #:transparent)
+

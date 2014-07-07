@@ -4,23 +4,165 @@
 
 (require "structs.rkt")
 
-;; will get replaced when we have a proper API to IonMonkey
+(define compile-id-regexp "^optimization info for compile #")
+
+;; The gecko profiler emits profiles as JSON.
+;; The two properties of the profile that we're interested in are 'marker and
+;; 'threads. The former contains a list of "profile events" that are objects
+;; containing a string describing the event and a timestamp. Optimization info
+;; is stored in profile events (in the string portion), with one event per
+;; compile. We don't care about the timestamps. Optimization info strings
+;; include a "compile id", which is a sequence number that uniquely identifies
+;; compiles.
+;; The latter contains the samples taken by the profiler. Samples include stack
+;; traces, timestamps and for ion-compiled code, compile ids.
+;; We correlate which samples correspond to which compiles by matching compile
+;; ids.
+
+;; <json profile from gecko profiler> -> (listof compile?)
+;; Takes a json profile dump (as a string) and returns a list of compiles.
+(provide profile->compiles)
+(define (profile->compiles profile)
+  ;; We only handle single-threaded stuff for now.
+  (define first-thread (first (dict-ref profile 'threads)))
+  (define samples      (dict-ref first-thread 'samples))
+  (define markers      (dict-ref first-thread 'markers))
+  (define all-opt-info
+    (for*/list ([m (dict-ref first-thread 'markers)]
+                [n (in-value (dict-ref m 'name))]
+                #:when (regexp-match compile-id-regexp n))
+      n))
+
+  (define compile-id->events
+    (for/hash ([logs all-opt-info])
+      (define by-operation* (string-split logs "|"))
+      (define prefix (first by-operation*))
+      (match-define (list _ id-string)
+        (regexp-match (format "~a([0-9]+)$"
+                              compile-id-regexp)
+                      prefix))
+      (define id (string->number id-string))
+      (define by-operation (rest by-operation*))
+      (define by-line (append-map (lambda (o) (string-split o ";"))
+                                  by-operation))
+      (values id (log->events by-line))))
+
+  (define-values (self-times total-times)
+    (samples/time-spent->compile-ids/times
+     (samples/timestamps->samples/time-spent samples)))
+
+  (define compile-ids->locs
+    (samples->compile-ids/locations samples))
+
+  ;; generate `compile` structs
+  (for/list ([id (dict-keys compile-id->events)]) ; superset of the others
+    (compile
+     ;; If we don't have a location, that's because we never sampled that
+     ;; compile. #f is as good as anything, that compile will get pruned
+     ;; for being cold anyway.
+     (dict-ref compile-ids->locs id #f)
+     (dict-ref self-times id 0.0)
+     (dict-ref total-times id 0.0)
+     (dict-ref compile-id->events id)))
+
+  ;; ;; TODO the code below will produce data compatible with the old analyses
+  ;; (apply append
+  ;;        ;; keep compiles in chronological order
+  ;;        (for/list ([k (sort (hash-keys compile-id->events) <)])
+  ;;          (hash-ref compile-id->events k)))
+  )
+
+
+;; (listof {frames: any/c, time: flonum?}) -> same
+;; Converts samples to include time "spent" in each sample, instead of
+;; a timestamp. Time spent is computed as half the sum of the two time ranges
+;; that touch the sample (before and after).
+;; E.g. with timestamps 10, 20 and 60, the middle sample would have
+;; (/ (+ (- 20 10) (- 60 20)) 2) = 25 spent in it.
+;; For the first and last samples, the time is twice the half of the single
+;; adjacent range.
+;; Drops single samples.
+;; Note: adapted from the Racket profiler.
+(define (samples/timestamps->samples/time-spent samples*)
+  (cond
+   [(or (empty? samples*) (empty? (rest samples*)))
+    '()] ; no interval, can't compute anything
+   [else
+    ;; for some reason, the last sample doesn't have a timestamp
+    (define (sample-time s)        (dict-ref s 'time #f))
+    (define samples (filter sample-time samples*))
+    (for/list ([prev (cons #f samples)]
+               [cur  samples]
+               [next (append (rest samples) '(#f))])
+      (define (update-sample-time t) (dict-set cur 'time t))
+      (define pre-interval
+        (and prev (- (sample-time cur) (sample-time prev))))
+      (define post-interval
+        (and next (- (sample-time next) (sample-time cur))))
+      (cond [(not prev) ; first sample
+             (update-sample-time post-interval)]
+            [(not next) ; last sample
+             (update-sample-time pre-interval)]
+            [else ; somewhere in the middle
+             (update-sample-time (/ (+ pre-interval post-interval) 2))]))]))
+
+;; (listof {frames: (listof {optional compile-id: integer?}), time: flonum?})
+;;   -> (values (dictof compile-id self-time)
+;;              (dictof compile-id total-time))
+;; Traverses samples and compute how much self and total time is spent in each
+;; compile.
+(define (samples/time-spent->compile-ids/times samples)
+  ;; map compile-ids (integers) to self time / total time
+  (define self-times  (make-hash))
+  (define total-times (make-hash))
+  (define ((update-time table) frame time)
+    (define id (dict-ref frame 'compile-id #f))
+    (when id ; frame was ion compiled. otherwise, no compile-id to assign to
+      (hash-update! table id (lambda (t) (+ t time)) 0.0)))
+  (define update-self-time  (update-time self-times))
+  (define update-total-time (update-time total-times))
+  (for ([s samples])
+    (define frames (dict-ref s 'frames))
+    (define time   (dict-ref s 'time))
+    (for ([f frames])
+      (update-total-time f time))
+    ;; update self time for leaves
+    (unless (empty? frames)
+      (update-self-time (last frames) time)))
+  (values self-times total-times))
+
+
+;;(listof {frames: (listof {optional compile-id: integer?}), location: string?})
+;;   -> (dictof compile-id location)
+;; Finds the location of the script corresponding to each (sampled) compile.
+;; Note: we *could* include that info with opt info profile events. Last time I
+;;   tried, I got weird memory corruption and gave up. May not be worth the
+;;   trouble, since the current technique works just as well for sampled
+;;   scripts, and those are the only ones that matter, really. Also, I'm not
+;;   even sure script location is useful info for the coach.
+(define (samples->compile-ids/locations samples)
+  (for*/hash ([s   samples]
+              [f   (dict-ref s 'frames)]
+              [id  (in-value (dict-ref f 'compile-id #f))]
+              [loc (in-value (dict-ref f 'location #f))]
+              #:when (and id loc))
+    (values id loc)))
+
 
 ;; log->events : (listof string?) -> (listof optimization-event?)
-(provide log->events)
 (define (log->events log)
   (map parse-event (log->optimization-events log)))
 
 ;; first, split into optimization events
-;; ASSUMPTION: all the logs that come after a "COACH: optimizing ..."
-;;   message (but before another are related to that event.
+;; ASSUMPTION: all the logs that come after a "optimizing ..."
+;;   message (but before another) are related to that event.
 ;; log->optimization-events : (listof string?) -> (listof (listof string?))
 (define (log->optimization-events l)
   (define-values (rev-events rev-current-event)
     (for/fold ([rev-events '()]
                [rev-current-event (list (first l))]) ; start first event
         ([line (in-list (rest l))])
-      (cond [(regexp-match "^COACH: optimizing " line) ; starting a new event
+      (cond [(regexp-match "^optimizing " line) ; starting a new event
              (values (cons (reverse rev-current-event)
                            rev-events)
                      (list line))]
@@ -37,38 +179,39 @@
 (define (parse-event e)
 
   ;; first line is of the form:
-  ;; "COACH: optimizing <operation> <property>: <file>:<line>:<column> #<script>:<offset>"
+  ;; "optimizing <operation> <property> <file>:<line>:<column> #<script>:<offset>"
   (match-define (list _ operation property file line column script offset)
     (regexp-match
      ;; note: will choke on unusual file / property names
-     "^COACH: optimizing ([^ ]+) ([^: ]+): ([^: ]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
+     "^optimizing ([^ ]+) ([^: ]+) ([^: ]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
      (first e)))
   (unless (and operation property file line column script offset)
     (error "invalid log entry" (first e)))
 
   ;; type info is of the form:
   ;;   for getprop:
-  ;;     "COACH:    types: <typeinfo>"
+  ;;     "types: <typeinfo>"
   ;;   for setprop:
-  ;;     "COACH:    obj types: <typeinfo>"
-  ;;     "COACH:    value types: <int>"
+  ;;     "obj types: <typeinfo>"
+  ;;     "property types: <typeinfo>"
+  ;;     "value types: <typeinfo>"
   ;; for now, we just consider typeinfo to be a string TODO exploit structure
   (define type-dict
     (with-handlers
         ([exn:misc:match? (lambda (_) (error "ill-formed event" e))])
       (cond [(equal? operation "getprop")
              (match-define (list _ obj-types)
-               (regexp-match "^COACH:    types: ?(.*)$" (second e)))
+               (regexp-match "^obj types: ?(.*)$" (second e)))
              (hash "obj" obj-types)]
             [(equal? operation "setprop")
              (match-define (list _ obj-types)
-               (regexp-match "^COACH:    obj types: ?(.*)$" (second e)))
+               (regexp-match "^obj types: ?(.*)$" (second e)))
              (match-define (list _ property-types) ; from the heap typeset
                ;; there's one set of types per possible object type
-               ;; TODO eventually have a separator for those
-               (regexp-match "^COACH:    property types: ?(.*)$" (third e)))
+               ;; TODO parse separator
+               (regexp-match "^property types: ?(.*)$" (third e)))
              (match-define (list _ value-types)
-               (regexp-match "^COACH:    value types: ?(.*)$" (fourth e)))
+               (regexp-match "^value types: ?(.*)$" (fourth e)))
              (hash "obj"      obj-types
                    "property" property-types
                    "value"    value-types)]
@@ -115,20 +258,20 @@
   (define (parse-strategy ls)
     (if (empty? ls)
         '() ; done
-        (match (regexp-match "^COACH:    trying (.+)$" (first ls))
+        (match (regexp-match "^trying (.+)$" (first ls))
           [(list _ strategy)
            (parse-result strategy (rest ls))]
           [_
            (error "attempt log does not have the right structure" lines)])))
   (define (parse-result strategy ls)
-    (cond [(regexp-match "^COACH:        success(, )?(.*)$" (first ls))
+    (cond [(regexp-match "^success(, )?(.*)$" (first ls))
            => (match-lambda [(list _ _ details)
                              (cons (success strategy
                                             event
                                             (and (not (equal? details ""))
                                                  details))
                                    (parse-strategy (rest ls)))])]
-          [(regexp-match "^COACH:        failure, (.+)$" (first ls))
+          [(regexp-match "^failure, (.+)$" (first ls))
            => (match-lambda [(list _ reason)
                              (cons (failure strategy event reason)
                                    (parse-strategy (rest ls)))])]
