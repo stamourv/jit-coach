@@ -67,7 +67,7 @@
      '(0) ; normalize to first version
      results))
 
-  (plot-file (list renderer (y-tick-lines)) "plot.pdf"
+  (plot-file (list renderer (y-tick-lines)) (build-path here "plot.pdf")
              #:x-label #f #:y-label "Normalized score (higher is better)")
 
   )
