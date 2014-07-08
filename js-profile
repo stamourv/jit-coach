@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# from https://developer.mozilla.org/en-US/docs/Mozilla/Performance/Profiling_with_the_Built-in_Profiler#Profiling_JS_benchmark_%28xpcshell%29
+
+if [ $# -ne 2 ]
+then
+  echo "Usage: js-profile <path-to-firefox-obj-dir> <program>"
+  exit
+fi
+
+BIN_DIR="$1/dist/bin"
+PROGRAM="$2"
+
+$BIN_DIR/run-mozilla.sh $BIN_DIR/xpcshell -e '
+    const Ci = Components.interfaces;
+    const Cc = Components.classes;
+    var profiler = Cc["@mozilla.org/tools/profiler;1"].getService(Ci.nsIProfiler);
+    profiler.StartProfiler(
+      10000000 /* = profiler memory */,
+      1 /* = sample rate: 100µs with patch, 1ms without */,
+      ["stackwalk", "js"], 2 /* = features, and number of features. */
+    );
+  ' -f "$PROGRAM" -e '
+    var profileObj = profiler.getProfileData();
+    print(JSON.stringify(profileObj));
+  ' | tail -n 1

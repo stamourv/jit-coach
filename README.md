@@ -2,12 +2,17 @@ Prototype Optimization Coach for SpiderMonkey
 =============================================
 
 ### Requires
-* [A patched version of SpiderMonkey](https://github.com/stamourv/gecko-dev).
+* [A patched version of SpiderMonkey](https://github.com/stamourv/gecko-dev/tree/profiler-opt-info) (Warning: I force push to that branch.).
 * [Racket](http://racket-lang.org) from recent [git](http://github.com/plt/racket/) or [nightly build](http://www.cs.utah.edu/plt/snapshots/).
 
 ### Instructions
-* [Build the JS shell](https://wiki.mozilla.org/JavaScript:New_to_SpiderMonkey#Build_the_js_shell)
-* Run your program (look in the `examples` subdirectory). This will generate optimization logs on stderr. Redirect those to a file.
-* `racket coach.rkt <logfile>`
+* [Build Firefox](https://developer.mozilla.org/en-US/docs/Simple_Firefox_build).
+  The JIT coach gets its data from the Gecko profiler, so building only the JS
+  shell is not enough.
+* Gather profile data using `./js-profile <path-to-firefox-obj-dir> <program>`,
+  redirecting the output to a file.
+  (Look in the `examples` subdirectory for programs to try the coach on.)
+  Running the profiler from the browser may work, but hasn't been tested.
+* `racket coach.rkt <profile-file>`
 
 To run benchmarks, see `README.md` in the `benchmarks` subdirectory.
