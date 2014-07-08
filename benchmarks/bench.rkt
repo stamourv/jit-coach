@@ -36,7 +36,7 @@
   ;; not all benchmarks have the same # of versions
   ;; pad with 0s for those who have fewer than the max, and sort in a
   ;; sensible order to avoid screwing up plot grouping
-  (define max-n-versions (apply max (map second (dict-keys scores))))
+  (define max-n-versions (add1 (apply max (map second (dict-keys scores)))))
   (define benchs (remove-duplicates (map first (dict-keys scores))))
   (for*/list ([b benchs]
               [i max-n-versions])
