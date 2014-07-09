@@ -68,7 +68,7 @@
   ;; we only care about type sets for `obj`, since it's the one
   ;; decisions are made on
   (define all-typesets
-    (remove-duplicates (map event-object-type event-group)))
+    (remove-duplicates (map event-object-typeset event-group)))
 
   ;; for now, do crude matching over traces with regexps
   (define chars "0123456789abcdefghijklmnopqrstuvwxyz")
@@ -80,7 +80,7 @@
       (values t s)))
   (define trace
     (list->string (for/list ([e event-group])
-                    (dict-ref typeset->char (event-object-type e)))))
+                    (dict-ref typeset->char (event-object-typeset e)))))
   ;; try all the combinations of typesets to flip-flop between
   (for*/first ([a all-typesets]
                [b (remove a all-typesets)] ; the two need to be distinct

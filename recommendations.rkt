@@ -41,7 +41,7 @@
     [(? (lambda (x) (regexp-match "^([0-9]+) possible object types$" x)))
      (string-append
       "This operation is polymorphic. Specifically, it sees these types:\n"
-      (format "    ~a\n" (event-object-type event))
+      (format "    ~a\n" (event-object-typeset event))
       "It would be optimized better if it was monomorphic.\n\n")]
 
     [(app (lambda (x)

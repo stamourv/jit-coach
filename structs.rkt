@@ -13,7 +13,7 @@
         #:transparent
         #:mutable) ; so attempts can refer back to the event
 
-(define (event-object-type event)
+(define (event-object-typeset event)
   (dict-ref (optimization-event-type-dict event) "obj"))
 (define (single-object-type? event)
   (regexp-match "^object\\[1\\]" (event-object-type event)))

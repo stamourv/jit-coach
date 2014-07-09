@@ -39,7 +39,7 @@
 (define (report-by-object-type all-events)
   (define by-object-type (group-by-object-type all-events))
   (for ([group by-object-type])
-    (define common-type (event-object-type (first group)))
+    (define common-type (event-object-typeset (first group)))
 
     ;; secondary grouping by failure type (currently counts both attempted
     ;; strategy and cause of failure)
