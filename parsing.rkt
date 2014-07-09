@@ -202,7 +202,7 @@
       (cond [(equal? operation "getprop")
              (match-define (list _ obj-types)
                (regexp-match "^obj types: ?(.*)$" (second e)))
-             (hash "obj" obj-types)]
+             (hash "obj" (parse-typeset obj-types))]
             [(equal? operation "setprop")
              (match-define (list _ obj-types)
                (regexp-match "^obj types: ?(.*)$" (second e)))
@@ -212,9 +212,9 @@
                (regexp-match "^property types: ?(.*)$" (third e)))
              (match-define (list _ value-types)
                (regexp-match "^value types: ?(.*)$" (fourth e)))
-             (hash "obj"      obj-types
-                   "property" property-types
-                   "value"    value-types)]
+             (hash "obj"      (parse-typeset obj-types)
+                   "property" (parse-typeset property-types)
+                   "value"    (parse-typeset value-types))]
             [else
              (error "unknown operation" operation)])))
   (define attempts-log
@@ -236,6 +236,28 @@
                         #f)) ; filled below
   (set-optimization-event-attempts! event (parse-attempts attempts-log event))
   event)
+
+
+;; parse-typeset : string? -> listof string?
+;; Takes a printed representation of a typeset and returns a list of individual
+;; types (still represented as strings).
+;; TODO does not currently split primitive types. also doesn't remove
+;;   pseudo-type info, like "[definite:N]"
+(define object-marker "object\\[([0-9]+)\\] ")
+(define (parse-typeset type-string)
+  (define (parse-object-types s)
+    ;; object types are printed as the location of the constructor
+    (regexp-match* "[^ :]+:[0-9]+" s))
+  ;; TODO wrap obj types in a data structure, or sth (to distinguish obj types
+  ;;   from primitives)
+  ;; object types are last. there may be primitives before that
+  (match (regexp-split object-marker type-string)
+    [(list primitive-types) ; no object types
+     (list primitive-types)] ;; TODO match primitive types
+    [(list "" object-types) ; no primitive types
+     (list object-types)]
+    [(list primitive-types object-types)
+     (cons primitive-types (parse-object-types object-types))]))
 
 
 ;; given a list of lines that describe attempts at different implementation

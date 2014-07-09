@@ -46,7 +46,7 @@
     (define all-failures (append-map event-failures group))
     (unless (empty? all-failures) ; only successes for that object type
 
-      (printf "failures for object type: ~a\n\n" common-type)
+      (printf "failures for object type: ~a\n\n" (first common-type))
       ;; TODO would really be nice to be able to print constructor location, or sth
 
       (define by-failure-type

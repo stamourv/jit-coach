@@ -16,7 +16,7 @@
 (define (event-object-typeset event)
   (dict-ref (optimization-event-type-dict event) "obj"))
 (define (single-object-type? event)
-  (regexp-match "^object\\[1\\]" (event-object-type event)))
+  (= (length (event-object-typeset event)) 1))
 
 
 ;; file + line + column are not enough to disambiguate. script + offset is
