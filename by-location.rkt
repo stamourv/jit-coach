@@ -15,6 +15,22 @@
 ;;                       -> (listof (listof optimization-event?)
 (define (group-by-location opt-events)
   (group-by optimization-event-location opt-events))
+;; Note: There are multiple reasons why a location may show up multiple times
+;; in the logs. First, and probably the most common case, the script it's in may
+;; get compiled multiple times. Second, the operation's script may be inlined
+;; multiple times (either directly or via a longer inlining chain) in a given
+;; function. Or it may be a combination of the two.
+;; The bottom line is: two events from the same location may or may not
+;; correspond to different compiles / different times, and may or may not
+;; correspond to different contexts.
+;; Because the two reports may correspond to different contexts (e.g. script
+;; compiled standalone vs compiled inline inside another script), it's unclear
+;; how much sense it makes to compare / group reports from the same location,
+;; unless we know the compiles they come from (which we currently don't, we
+;; don't preserve that info).
+;; TODO this means that looking for temporal pattern doesn't make much sense
+;;  (but those are already disabled), and that looking for consistent failures
+;;  across *all* instances of a location may be too strict.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
