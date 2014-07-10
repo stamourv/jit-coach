@@ -261,8 +261,15 @@
                         (not (regexp-match r t))))
       t))
   (define (parse-object-types s)
-    ;; object types are printed as the location of the constructor
-    (regexp-match* "[^ :]+:[0-9]+" s))
+    ;; Object types are printed space-separated.
+    ;; Currently, object types' printed representation include:
+    ;; constructor name, constructor location and address of object type.
+    ;; The first two are for user consumption. The latter is to disambiguate.
+    ;; For example in raytrace, because of the `Class` "class", all objects end
+    ;; up with the same constructor, which ruins any kind of analysis on object
+    ;; types. Disambiguating using the address solves the problem. Still not
+    ;; great UI-wise thought, since addresses are meaningless to users. Bleh.
+    (string-split s " "))
   ;; object types are last. there may be primitives before that
   (match (regexp-split object-marker type-string)
     [(list primitive-types) ; no object types
