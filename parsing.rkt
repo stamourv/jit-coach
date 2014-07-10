@@ -190,12 +190,11 @@
 
   ;; type info is of the form:
   ;;   for getprop:
-  ;;     "types: <typeinfo>"
+  ;;     "types: <typeset>"
   ;;   for setprop:
-  ;;     "obj types: <typeinfo>"
-  ;;     "property types: <typeinfo>"
-  ;;     "value types: <typeinfo>"
-  ;; for now, we just consider typeinfo to be a string TODO exploit structure
+  ;;     "obj types: <typeset>"
+  ;;     "property types: <comma-separated-typesets>"
+  ;;     "value types: <typeset>"
   (define type-dict
     (with-handlers
         ([exn:misc:match? (lambda (_) (error "ill-formed event" e))])
