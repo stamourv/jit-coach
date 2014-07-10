@@ -25,7 +25,6 @@
   ;;   patterns, though, since we destroyed ordering, and now have holes
   ;;   in the timeline
   (define hot-events (append-map compile-events top-compiles))
-  (report-consistently-bad hot-events)
   (report-by-object-type hot-events)
 
   )

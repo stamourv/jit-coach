@@ -236,6 +236,15 @@
 ;;      want those cases to be optimized
 ;;      however, this doesn't address conveniently vs genuinely poly. at least
 ;;      not conceptually (may end up fixing the problem by "accident")
+;; TODO not sure how much "consistently bad" makes sense in the presence of inlining
+;;   the same site may have different failures depending of whether or where
+;;   it's inlined. We shouldn't require it to be failing in all places to be
+;;   worth reporting. (Or maybe we should, and that gives us a way to prune)
+;;   Anyway, since we lost the distinction of which report come from which
+;;   compile after pruning, worth thinking about what to do in those cases.
+;;   Maybe we should just consider failures individually, and just merge those
+;;   that show up multiple times (and use # of temporal failures, weigthed by
+;;   profile, to compute badness)
 
 ;; report-consistently-bad : (listof optimization-event?) -> void?
 ;; takes a list of (ungrouped) events, and prints report of consistent issues
