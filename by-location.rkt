@@ -224,7 +224,7 @@
        ;; by the by-object-type view.
        ;; other operations are not so lucky, and must be reported here.
        (or monomorphic? ; show them anyway
-           (not (single-object-type? (attempt-event (first representative)))))
+           (not (monomorphic-event? (attempt-event (first representative)))))
        (consistently-bad representative (length failuress))))
 
 ;; report-consistently-bad : (listof optimization-event?) -> void?

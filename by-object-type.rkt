@@ -28,16 +28,18 @@
 (provide report-by-object-type)
 
 
-;; group-by-object-type : (listof optimization-event?)
-;;                          -> (listof (listof optimization-event?)
-(define (group-by-object-type opt-events)
-  (group-by event-object-type (filter single-object-type? opt-events)))
+;; group-by-object-type-mono : (listof optimization-event?)
+;;                               -> (listof (listof optimization-event?)
+;; For monomorphic operations, grouping is easy. They just need to be about
+;; the same type.
+(define (group-by-object-type-mono opt-events)
+  (group-by event-object-typeset (filter monomorphic-event? opt-events)))
 
 ;; report-by-object-type : (listof optimization-event?) -> void?
 ;; takes a list of ungrouped events, and prints a by-object-type view
 ;; of optimization failures
 (define (report-by-object-type all-events)
-  (define by-object-type (group-by-object-type all-events))
+  (define by-object-type (group-by-object-type-mono all-events))
   (for ([group by-object-type])
     (define common-type (event-object-typeset (first group)))
 
@@ -46,7 +48,8 @@
     (define all-failures (append-map event-failures group))
     (unless (empty? all-failures) ; only successes for that object type
 
-      (printf "failures for object type: ~a\n\n" (first common-type))
+      (printf "failures for object type: ~a\n\n"
+              (first (typeset-object-types common-type)))
       ;; TODO would really be nice to be able to print constructor location, or sth
 
       (define by-failure-type

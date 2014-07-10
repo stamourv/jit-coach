@@ -207,13 +207,19 @@
              (match-define (list _ obj-types)
                (regexp-match "^obj types: ?(.*)$" (second e)))
              (match-define (list _ property-types) ; from the heap typeset
-               ;; there's one set of types per possible object type
-               ;; TODO parse separator
                (regexp-match "^property types: ?(.*)$" (third e)))
              (match-define (list _ value-types)
                (regexp-match "^value types: ?(.*)$" (fourth e)))
              (hash "obj"      (parse-typeset obj-types)
-                   "property" (parse-typeset property-types)
+                   ;; In TI, properties can have multiple typesets (one per
+                   ;; possible object type), which we log comma-separated.
+                   ;; For simplicity, we merge the sets.
+                   ;; TODO may be simpler for instrumentation to allow multiple
+                   ;;   "messages" for property types (to use addOptInfoTypeset)
+                   ;;   instead of a comma-separated list
+                   "property" (merge-typesets
+                               (map parse-typeset
+                                    (string-split property-types ",")))
                    "value"    (parse-typeset value-types))]
             [else
              (error "unknown operation" operation)])))
@@ -238,26 +244,34 @@
   event)
 
 
-;; parse-typeset : string? -> listof string?
+;; parse-typeset : string? -> typeset?
 ;; Takes a printed representation of a typeset and returns a list of individual
 ;; types (still represented as strings).
-;; TODO does not currently split primitive types. also doesn't remove
-;;   pseudo-type info, like "[definite:N]"
 (define object-marker "object\\[([0-9]+)\\] ")
 (define (parse-typeset type-string)
+  (define (parse-primitive-types s)
+    ;; Remove info that doesn't really correspond to types.
+    ;; E.g. the fact that a property is in a definite slot.
+    (define pruning-regexps
+      '("^\\[non-data\\]$"
+        "^\\[non-writable\\]$"
+        "^\\[definite:[0-9]+\\]$"))
+    (for/list ([t (string-split s " ")]
+               #:when (for/and ([r pruning-regexps])
+                        (not (regexp-match r t))))
+      t))
   (define (parse-object-types s)
     ;; object types are printed as the location of the constructor
     (regexp-match* "[^ :]+:[0-9]+" s))
-  ;; TODO wrap obj types in a data structure, or sth (to distinguish obj types
-  ;;   from primitives)
   ;; object types are last. there may be primitives before that
   (match (regexp-split object-marker type-string)
     [(list primitive-types) ; no object types
-     (list primitive-types)] ;; TODO match primitive types
+     (typeset (parse-primitive-types primitive-types) '())]
     [(list "" object-types) ; no primitive types
-     (list object-types)]
+     (typeset '() (parse-object-types object-types))]
     [(list primitive-types object-types)
-     (cons primitive-types (parse-object-types object-types))]))
+     (typeset (parse-primitive-types primitive-types)
+              (parse-object-types    object-types))]))
 
 
 ;; given a list of lines that describe attempts at different implementation

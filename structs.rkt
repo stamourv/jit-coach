@@ -6,7 +6,7 @@
 
 ;; location : location?
 ;; operation : "getprop" | "setprop"
-;; type-dict : (dictof string? string?)
+;; type-dict : (dictof string? typeset?)
 ;;   mapping "operand name" to their possible types
 ;; attempts : (listof attempt?)
 (struct optimization-event (location operation property type-dict attempts)
@@ -15,8 +15,27 @@
 
 (define (event-object-typeset event)
   (dict-ref (optimization-event-type-dict event) "obj"))
-(define (single-object-type? event)
-  (= (length (event-object-typeset event)) 1))
+(define (monomorphic-event? event)
+  (single-object-type? (event-object-typeset event)))
+
+;; representation of SpiderMonkey's TI's type sets
+;; mostly about keeping object types separate from primitive types in our case
+(struct typeset (primitive-types ; (listof string?)
+                 object-types)   ; (listof string?)
+        #:transparent
+        #:guard (lambda (p o _)
+                  (unless (and ((listof string?) p) ((listof string?) o))
+                    (error "typesets expect lists of types" p o))
+                  (values p o)))
+
+(define (single-object-type? typeset)
+  (= (length (typeset-object-types typeset)) 1))
+
+(define (merge-typesets tss)
+  (define pss (append-map typeset-primitive-types tss))
+  (define oss (append-map typeset-object-types    tss))
+  (typeset (remove-duplicates pss)
+           (remove-duplicates oss)))
 
 
 ;; file + line + column are not enough to disambiguate. script + offset is
