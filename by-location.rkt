@@ -226,6 +226,16 @@
        (or monomorphic? ; show them anyway
            (not (monomorphic-event? (attempt-event (first representative)))))
        (consistently-bad representative (length failuress))))
+;; TODO that generates a lot of spurious reports.
+;;   for example, reporting that a function is polymorphic is probably not useful.
+;;   There are a few cases (conveniently poly. cases) where it may be desirable
+;;   to do sth, o/w not. How to distinguish those cases?
+;;   Or just prune poly reports altogether?
+;;   -> here's an idea: consider best poly strat (inline poly) as a success, and
+;;      only worse poly impls to be failures. being poly is normal, but we still
+;;      want those cases to be optimized
+;;      however, this doesn't address conveniently vs genuinely poly. at least
+;;      not conceptually (may end up fixing the problem by "accident")
 
 ;; report-consistently-bad : (listof optimization-event?) -> void?
 ;; takes a list of (ungrouped) events, and prints report of consistent issues
