@@ -9,9 +9,11 @@
 ;; type-dict : (dictof string? typeset?)
 ;;   mapping "operand name" to their possible types
 ;; attempts : (listof attempt?)
-(struct optimization-event (location operation property type-dict attempts)
-        #:transparent
-        #:mutable) ; so attempts can refer back to the event
+;; profile-weight : number?
+(struct optimization-event
+  (location operation property type-dict attempts profile-weight)
+  #:transparent
+  #:mutable) ; so attempts can refer back to the event
 
 (define (event-object-typeset event)
   (dict-ref (optimization-event-type-dict event) "obj"))

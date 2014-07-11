@@ -142,9 +142,15 @@
         ;; TODO also check whether that failure happens across all compiles
         ;;   -> for that, events would need to know their siblings by location
         (for ([loc (sort by-location > #:key length)])
-          (printf "~a x ~a\n"
+          (printf "~a x ~a -- badness: ~a\n"
                   (length loc)
-                  (optimization-event-location (attempt-event (first loc)))))
+                  (optimization-event-location (attempt-event (first loc)))
+                  ;; TODO because the same event may show up for multiple
+                  ;;   failure types, we may "count" its badness multiple times.
+                  ;;   not a problem now, but may be if we start adding them up.
+                  ;; TODO use badness for ranking / pruning instead of printing
+                  (for/sum ([a loc])
+                    (optimization-event-profile-weight (attempt-event a)))))
         (newline))
 
       (print-separator))))

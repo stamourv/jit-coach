@@ -33,6 +33,13 @@
                 #:when (regexp-match compile-id-regexp n))
       n))
 
+  (define-values (self-times total-times)
+    (samples/time-spent->compile-ids/times
+     (samples/timestamps->samples/time-spent samples)))
+
+  (define compile-ids->locs
+    (samples->compile-ids/locations samples))
+
   (define compile-id->events
     (for/hash ([logs all-opt-info])
       (define by-operation* (string-split logs "|"))
@@ -45,14 +52,7 @@
       (define by-operation (rest by-operation*))
       (define by-line (append-map (lambda (o) (string-split o ";"))
                                   by-operation))
-      (values id (log->events by-line))))
-
-  (define-values (self-times total-times)
-    (samples/time-spent->compile-ids/times
-     (samples/timestamps->samples/time-spent samples)))
-
-  (define compile-ids->locs
-    (samples->compile-ids/locations samples))
+      (values id (log->events by-line (dict-ref self-times id 0.0)))))
 
   ;; generate `compile` structs
   (for/list ([id (dict-keys compile-id->events)]) ; superset of the others
@@ -142,9 +142,9 @@
     (values id loc)))
 
 
-;; log->events : (listof string?) -> (listof optimization-event?)
-(define (log->events log)
-  (map parse-event (log->optimization-events log)))
+;; log->events : (listof string?) number? -> (listof optimization-event?)
+(define (log->events log profile-weight)
+  (map (parse-event profile-weight) (log->optimization-events log)))
 
 ;; first, split into optimization events
 ;; ASSUMPTION: all the logs that come after a "optimizing ..."
@@ -168,8 +168,8 @@
                  rev-events)))
 
 ;; second, parse location (and maybe some general info)
-;; parse-event : (listof string?) -> optimization-event?
-(define (parse-event e)
+;; parse-event : number? -> (listof string?) -> optimization-event?
+(define ((parse-event profile-weight) e)
 
   ;; first line is of the form:
   ;; "optimizing <operation> <property> <file>:<line>:<column> #<script>:<offset>"
@@ -231,7 +231,8 @@
                         operation
                         property
                         type-dict
-                        #f)) ; filled below
+                        #f ; attempts, filled below
+                        profile-weight))
   (set-optimization-event-attempts! event (parse-attempts attempts-log event))
   event)
 
