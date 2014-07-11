@@ -37,7 +37,8 @@
       (not (empty? (set-intersect ts1 ts2)))))
 
 ;; group-by-object-type-poly : (listof optimization-event?)
-;;                               -> (listof (listof optimization-event?)
+;;                               -> (listof (cons (listof <class-type-string>)
+;;                                                (listof optimization-event?)))
 ;; For polymorphic operations, we use the following heuristic: if two operations
 ;; on properties of the same name have overlapping type sets, then chances are
 ;; they're talking about the same property (either from a common ancestor, or
@@ -89,15 +90,15 @@
 
   ;; Step 3, merge properties that appear on the same typesets, so they are
   ;; reported together.
+  (define (find-class event)
+    (define name (optimization-event-property event))
+    (define classes (dict-ref names->equivalence-classes name))
+    ;; find the equivalence class our typeset belongs to
+    (define evt-types (event-object-types event))
+    (findf (lambda (c) (sets-overlap? c evt-types))
+           classes))
   (define by-typesets
-    (group-by (lambda (event)
-                (define name (optimization-event-property event))
-                (define classes (dict-ref names->equivalence-classes name))
-                ;; find the equivalence class our typeset belongs to
-                (define evt-types (event-object-types event))
-                (findf (lambda (c) (sets-overlap? c evt-types))
-                       classes))
-              opt-events))
+    (group-by find-class opt-events))
 
   ;; (for ([g by-typesets])
   ;;   (for ([e g])
@@ -106,21 +107,18 @@
   ;;             (optimization-event-property e)))
   ;;   (newline) (newline) (newline))
 
-  by-typesets)
-
+  ;; For reporting, attach the equivalence class to each group.
+  (for/list ([g by-typesets])
+    (cons (find-class (first g)) g)))
 
 ;; report-by-object-type : (listof optimization-event?) -> void?
 ;; takes a list of ungrouped events, and prints a by-object-type view
 ;; of optimization failures
 (define (report-by-object-type all-events)
   (define by-object-type (group-by-object-type-poly all-events))
-  (for ([group by-object-type])
-    (define common-types
-      ;; all the typesets in the group are overlapping
-      ;; TODO this is not guaranteed to give us the superset, if we have an op
-      ;;   that sees (A B) and another that sees (B C). fix it. we compute the
-      ;;   superset while grouping, so just emit it
-      (argmax length (map event-object-types group)))
+  (for ([group* by-object-type])
+    (define common-types (first group*))
+    (define group        (rest group*))
 
     ;; secondary grouping by failure type (currently counts both attempted
     ;; strategy and cause of failure)
