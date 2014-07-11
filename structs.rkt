@@ -15,6 +15,8 @@
 
 (define (event-object-typeset event)
   (dict-ref (optimization-event-type-dict event) "obj"))
+(define (event-object-types event) ; only object types, not primitive types
+  (typeset-object-types (event-object-typeset event)))
 (define (monomorphic-event? event)
   (single-object-type? (event-object-typeset event)))
 

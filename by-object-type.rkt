@@ -28,28 +28,106 @@
 (provide report-by-object-type)
 
 
-;; group-by-object-type-mono : (listof optimization-event?)
+(define (sets-overlap? ts1 ts2)
+  (or (equal? ts1 ts2) ; to count two empty sets as overlapping
+      ;; This is desirable to merge reports about fields that have the same
+      ;; name and unknown constructors.
+      ;; TODO try to avoid unknown constructors for singletons. would avoid
+      ;;   the issue and give more precise reports
+      (not (empty? (set-intersect ts1 ts2)))))
+
+;; group-by-object-type-poly : (listof optimization-event?)
 ;;                               -> (listof (listof optimization-event?)
-;; For monomorphic operations, grouping is easy. They just need to be about
-;; the same type.
-(define (group-by-object-type-mono opt-events)
-  (group-by event-object-typeset (filter monomorphic-event? opt-events)))
+;; For polymorphic operations, we use the following heuristic: if two operations
+;; on properties of the same name have overlapping type sets, then chances are
+;; they're talking about the same property (either from a common ancestor, or
+;; from an ancestor's "virtual" property).
+;; This assumes that no location will call both, e.g. `gun.draw` and
+;; `canvas.draw`, otherwise all operations involving draw will conflate firearms
+;; and art supplies.
+;; Monomorphic operations are handled gracefully. If a property is only ever
+;; used in monomorphic contexts, will be kept separate from polymorphic
+;; properties on the same class(es).
+(define (group-by-object-type-poly opt-events)
+
+  ;; Step 1, group operations by property name.
+  (define by-name (group-by optimization-event-property opt-events))
+
+  ;; Step 2, for each property name, find equivalence classes, i.e. find
+  ;; properties that are likely to be the "same", not accidental name clashes.
+  ;; E.g., For `draw`, distinguish between firearms and art supplies.
+  ;; TODO this is important at least for richards, where both TaskControlBlock
+  ;;   and tasks have a `run` method, and the different tasks' `scheduler`
+  ;;   fields are all used monomorphically, it looks like (same for v1, v2)
+  (define names->equivalence-classes
+    (for/hash ([g by-name])
+      (define name (optimization-event-property (first g)))
+      (define classes
+        (for/fold ([classes '()])
+            ([evt g])
+          (let loop ([to-match (event-object-types evt)]
+                     [classes  classes])
+            (cond [(empty? classes)
+                   ;; didn't find an equivalence class our typeset overlaps with
+                   ;; start a new one
+                   (cons to-match classes)]
+                  [(sets-overlap? to-match (first classes))
+                   ;; overlap, merge
+                   (define new-class (set-union to-match (first classes)))
+                   ;; look for overlap between this new class and the rest of
+                   ;; the existing classes
+                   (loop new-class
+                         (rest classes))]
+                  [else
+                   ;; keep going
+                   (cons (first classes)
+                         (loop to-match (rest classes)))]))))
+      (values name classes)))
+
+  ;; (for ([(k v) (in-hash names->equivalence-classes)])
+  ;;   (printf "~a -> ~s\n" k v))
+
+  ;; Step 3, merge properties that appear on the same typesets, so they are
+  ;; reported together.
+  (define by-typesets
+    (group-by (lambda (event)
+                (define name (optimization-event-property event))
+                (define classes (dict-ref names->equivalence-classes name))
+                ;; find the equivalence class our typeset belongs to
+                (define evt-types (event-object-types event))
+                (findf (lambda (c) (sets-overlap? c evt-types))
+                       classes))
+              opt-events))
+
+  ;; (for ([g by-typesets])
+  ;;   (for ([e g])
+  ;;     (printf "~s -- ~a\n"
+  ;;             (event-object-types e)
+  ;;             (optimization-event-property e)))
+  ;;   (newline) (newline) (newline))
+
+  by-typesets)
+
 
 ;; report-by-object-type : (listof optimization-event?) -> void?
 ;; takes a list of ungrouped events, and prints a by-object-type view
 ;; of optimization failures
 (define (report-by-object-type all-events)
-  (define by-object-type (group-by-object-type-mono all-events))
+  (define by-object-type (group-by-object-type-poly all-events))
   (for ([group by-object-type])
-    (define common-type (event-object-typeset (first group)))
+    (define common-types
+      ;; all the typesets in the group are overlapping
+      ;; TODO this is not guaranteed to give us the superset, if we have an op
+      ;;   that sees (A B) and another that sees (B C). fix it. we compute the
+      ;;   superset while grouping, so just emit it
+      (argmax length (map event-object-types group)))
 
     ;; secondary grouping by failure type (currently counts both attempted
     ;; strategy and cause of failure)
     (define all-failures (append-map event-failures group))
     (unless (empty? all-failures) ; only successes for that object type
 
-      (printf "failures for object type: ~a\n\n"
-              (first (typeset-object-types common-type)))
+      (printf "failures for object types: ~a\n\n" common-types)
       ;; TODO would really be nice to be able to print constructor location, or sth
 
       (define by-failure-type
