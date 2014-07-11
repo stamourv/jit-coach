@@ -149,6 +149,9 @@
                   ;;   failure types, we may "count" its badness multiple times.
                   ;;   not a problem now, but may be if we start adding them up.
                   ;; TODO use badness for ranking / pruning instead of printing
+                  ;; TODO hey, this is using the temporal dimension.
+                  ;;   we're doing *temporal merging*! merging reports about
+                  ;;   missed opts across time. worth reporting, contribution!
                   (for/sum ([a loc])
                     (optimization-event-profile-weight (attempt-event a)))))
         (newline))
