@@ -2,8 +2,7 @@
 
 (require unstable/list json)
 
-(require "structs.rkt" "parsing.rkt"
-         "by-location.rkt" "by-object-type.rkt")
+(require "structs.rkt" "parsing.rkt" "by-object-type.rkt")
 
 (module+ main
   (define log-file (vector-ref (current-command-line-arguments) 0))
@@ -21,9 +20,6 @@
 
   ;; TODO crude adapter to work with old analyses. doesn't take advantage
   ;;   of grouping in compiles (beyond pruning, that is)
-  ;; TODO makes no sense to use that with analyses that look for temporal
-  ;;   patterns, though, since we destroyed ordering, and now have holes
-  ;;   in the timeline
   (define hot-events (append-map compile-events top-compiles))
   (report-by-object-type hot-events)
 
