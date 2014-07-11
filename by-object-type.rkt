@@ -126,7 +126,6 @@
     (unless (empty? all-failures) ; only successes for that object type
 
       (printf "failures for object types: ~a\n\n" common-types)
-      ;; TODO would really be nice to be able to print constructor location, or sth
 
       (define by-failure-type
         (group-by (lambda (f) (cons (attempt-strategy f)
