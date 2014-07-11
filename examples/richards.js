@@ -35,9 +35,9 @@
 // Martin Richards.
 
 
-// var Richards = new BenchmarkSuite('Richards', [35302], [
-//   new Benchmark("Richards", true, false, 8200, runRichards)
-// ]); // HERE this relies on their harness
+var Richards = new BenchmarkSuite('Richards', [35302], [
+  new Benchmark("Richards", true, false, 8200, runRichards)
+]);
 
 
 /**
@@ -537,6 +537,3 @@ Packet.prototype.addTo = function (queue) {
 Packet.prototype.toString = function () {
   return "Packet";
 };
-
-
-runRichards() // HERE to make the thing standalone

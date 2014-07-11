@@ -8,9 +8,9 @@
 // untouched. This file also contains a copy of parts of the Prototype
 // JavaScript framework which is used by the ray tracer.
 
-// var RayTrace = new BenchmarkSuite('RayTrace', [739989], [
-//   new Benchmark('RayTrace', true, false, 600, renderScene)
-// ]); // HERE this relies on their harness
+var RayTrace = new BenchmarkSuite('RayTrace', [739989], [
+  new Benchmark('RayTrace', true, false, 600, renderScene)
+]);
 
 
 // Variable used to hold a number that can be used to verify that
@@ -902,5 +902,3 @@ function renderScene(){
 
     raytracer.renderScene(scene, null, 0);
 }
-
-renderScene() // HERE to make it standalone

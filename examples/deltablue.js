@@ -23,9 +23,9 @@
 // more like a JavaScript program.
 
 
-// var DeltaBlue = new BenchmarkSuite('DeltaBlue', [66118], [
-//   new Benchmark('DeltaBlue', true, false, 4400, deltaBlue)
-// ]); // HERE this relies on their harness
+var DeltaBlue = new BenchmarkSuite('DeltaBlue', [66118], [
+  new Benchmark('DeltaBlue', true, false, 4400, deltaBlue)
+]);
 
 
 /**
@@ -881,6 +881,3 @@ function deltaBlue() {
   chainTest(100);
   projectionTest(100);
 }
-
-
-deltaBlue() // HERE to make the thing standalone
