@@ -63,14 +63,7 @@
      (dict-ref compile-ids->locs id #f)
      (dict-ref self-times id 0.0)
      (dict-ref total-times id 0.0)
-     (dict-ref compile-id->events id)))
-
-  ;; ;; TODO the code below will produce data compatible with the old analyses
-  ;; (apply append
-  ;;        ;; keep compiles in chronological order
-  ;;        (for/list ([k (sort (hash-keys compile-id->events) <)])
-  ;;          (hash-ref compile-id->events k)))
-  )
+     (dict-ref compile-id->events id))))
 
 
 ;; (listof {frames: any/c, time: flonum?}) -> same
