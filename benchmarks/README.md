@@ -18,7 +18,9 @@ Also reuses part of the Octane infrastructure for benchmarking.
 #### Richards:
   1. baseline
   2. fixed location for `TaskControlBlock.state`
-  3. remove packet queue flip-flopping
+  3. remove packet queue flip-flopping using a sentinel object
+  4. remove packet queue flip-flopping using a closure
+  5. #2 + #4
 
 #### DeltaBlue:
   1. baseline
@@ -27,6 +29,7 @@ Also reuses part of the Octane infrastructure for benchmarking.
   4. monomorphic `BinaryConstraint.output`
   5. #2 + #3 + #4
   6. #5 + monomorphic `UnaryConstraint.isSatisfied`
+  7. duplicate `addToGraph`
 
 #### RayTrace:
   1. baseline

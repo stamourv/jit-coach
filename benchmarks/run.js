@@ -31,12 +31,15 @@ load(base_dir + 'base.js'); // HERE changed set of benchmarks
 load(base_dir + 'richards.js');
 load(base_dir + 'richards2.js');
 load(base_dir + 'richards3.js');
+load(base_dir + 'richards4.js');
+load(base_dir + 'richards5.js');
 load(base_dir + 'deltablue.js');
 load(base_dir + 'deltablue2.js');
 load(base_dir + 'deltablue3.js');
 load(base_dir + 'deltablue4.js');
 load(base_dir + 'deltablue5.js');
 load(base_dir + 'deltablue6.js');
+load(base_dir + 'deltablue7.js');
 load(base_dir + 'raytrace.js');
 load(base_dir + 'raytrace2.js');
 load(base_dir + 'raytrace3.js');
