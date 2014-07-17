@@ -158,24 +158,24 @@
   (define group            (rest types+group))
   (define near-miss-events (filter counts-as-near-miss? group))
 
-  ;; secondary grouping by failure type (currently counts both attempted
-  ;; strategy and cause of failure)
-  (define all-failures (append-map event-failures near-miss-events))
+  ;; Secondary grouping by failure type.
+  ;; We only consider the last failure for each event. That way, we avoid
+  ;; producing multiple reports about the same operations (which is not helpful)
+  ;; and instead report the worst problem. If that problem is fixed, the user
+  ;; can re-run the coach and see the other failures (assuming they weren't also
+  ;; fixed at the same time).
   (define by-failure-type
-    (group-by (lambda (f) (cons (attempt-strategy f)
-                                (failure-reason f)))
-              all-failures))
+    (group-by event-last-failure near-miss-events))
   (for/list ([group by-failure-type])
-    (define failure (first group))
+    (define failure (event-last-failure (first group)))
     (define (total-badness group)
-      (for/sum ([a group])
-        (optimization-event-profile-weight
-         (attempt-event a))))
+      (for/sum ([e group])
+        (optimization-event-profile-weight e)))
     (define by-property
-      (group-by attempt-property group))
+      (group-by optimization-event-property group))
     (define affected-properties
       (for/list ([g by-property])
-        (list (attempt-property (first g))
+        (list (optimization-event-property (first g))
               (total-badness g))))
     (by-object-type-report common-types
                            failure

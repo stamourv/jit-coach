@@ -127,6 +127,8 @@
 
 (define (event-failures event)
   (filter failure? (optimization-event-attempts event)))
+(define (event-last-failure event)
+  (last (event-failures event)))
 
 ;; strategy that was ultimately picked
 (define (event-strategy event)
