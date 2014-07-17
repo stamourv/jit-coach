@@ -113,6 +113,9 @@
 (struct by-object-type-report
   (object-typeset       ; (listof <constructor>) ; all the object types affected
    failure              ; failure?
+   ;;                     one of the failures from the group. all of them should
+   ;;                     be equivalent, except for location, which we don't
+   ;;                     care about at this point.
    badness              ; number?
    affected-properties) ; (listof (list string? number?))
   ;;                      keeps track of badness for each property individually
