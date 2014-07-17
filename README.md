@@ -12,7 +12,9 @@ Prototype Optimization Coach for SpiderMonkey
 * Gather profile data using `./js-profile <path-to-firefox-obj-dir> <program>`,
   redirecting the output to a file.
   (Look at the `run-*.js` files in the `examples` subdirectory for programs to
-  try the coach on, or use one of the provided profile files directly.)
+  try the coach on, or use one of the provided profile files directly.
+  Note: when using `run-*.js`, you need to run `js-profile` from the `example`
+  directory.)
   Running the profiler from the browser may work, but hasn't been tested.
 * `racket coach.rkt <profile-file>`
 
