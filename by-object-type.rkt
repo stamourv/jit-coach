@@ -111,49 +111,71 @@
   (for/list ([g by-typesets])
     (cons (find-class (first g)) g)))
 
+
+;; For now, allowing multiple reports for the same object-typeset, one per
+;; cause for failure. Makes sense, since those may have different solutions.
+;; TODO probably want a general `report` struct, of which this is a substruct
+(struct by-object-type-report
+  (object-typeset   ; (listof <constructor>) ; all the object types affected
+   failure          ; failure?
+   badness          ; number?
+   affected-fields) ; (listof string?)
+  #:transparent)
+
+;; by-object-type-group->reports : (cons (listof <object-type-string>)
+;;                                       (listof optimization-event?))
+;;                                   -> (listof by-object-type-report?)
+;; Generates the list of near miss reports for the given object-type-group.
+;; Performs temporal merging: merges identical failures that affect the same
+;;   operation but come from different compiles. Adds up their badness.
+;; Also performs by-field merging.
+(define (by-object-type-group->reports types+group)
+  (define common-types (first types+group))
+  (define group        (rest types+group))
+
+  ;; secondary grouping by failure type (currently counts both attempted
+  ;; strategy and cause of failure)
+  (define all-failures (append-map event-failures group))
+  (define by-failure-type
+    (group-by (lambda (f) (cons (attempt-strategy f)
+                                (failure-reason f)))
+              all-failures))
+  (for/list ([group by-failure-type])
+    (define failure (first group))
+    (define total-badness
+      (for/sum ([a group])
+        (optimization-event-profile-weight
+         (attempt-event a))))
+    (define affected-fields
+      (remove-duplicates
+       (for/list ([a group])
+         (optimization-event-property (attempt-event a)))))
+    (by-object-type-report common-types
+                           failure
+                           total-badness
+                           affected-fields)))
+
 ;; report-by-object-type : (listof optimization-event?) -> void?
 ;; takes a list of ungrouped events, and prints a by-object-type view
 ;; of optimization failures
 (define (report-by-object-type all-events)
   (define by-object-type (group-by-object-type-poly all-events))
-  (for ([group* by-object-type])
-    (define common-types (first group*))
-    (define group        (rest group*))
+  (define all-reports (append-map by-object-type-group->reports by-object-type))
 
-    ;; secondary grouping by failure type (currently counts both attempted
-    ;; strategy and cause of failure)
-    (define all-failures (append-map event-failures group))
-    (unless (empty? all-failures) ; only successes for that object type
+  ;; do pruning based on badness (profile weight, really)
+  ;; keep only top N
+  ;; TODO could prune differently. e.g. take up to X% of the total badness
+  (define hot-reports
+    (take (sort all-reports > #:key by-object-type-report-badness)
+          (min 5 (length all-reports))))
 
-      (printf "failures for object types: ~a\n\n" common-types)
-
-      (define by-failure-type
-        (group-by (lambda (f) (cons (attempt-strategy f)
-                                    (failure-reason f)))
-                  all-failures))
-      (for ([group by-failure-type])
-        (printf "strategy: ~a\nreason: ~a\n\n~aat:\n"
-                (attempt-strategy (first group))
-                (failure-reason (first group))
-                (explain-failure (first group)))
-        (define by-location
-          (group-by (lambda (f) (optimization-event-location (attempt-event f)))
-                    group))
-        ;; TODO also check whether that failure happens across all compiles
-        ;;   -> for that, events would need to know their siblings by location
-        (for ([loc (sort by-location > #:key length)])
-          (printf "~a x ~a -- badness: ~a\n"
-                  (length loc)
-                  (optimization-event-location (attempt-event (first loc)))
-                  ;; TODO because the same event may show up for multiple
-                  ;;   failure types, we may "count" its badness multiple times.
-                  ;;   not a problem now, but may be if we start adding them up.
-                  ;; TODO use badness for ranking / pruning instead of printing
-                  ;; TODO hey, this is using the temporal dimension.
-                  ;;   we're doing *temporal merging*! merging reports about
-                  ;;   missed opts across time. worth reporting, contribution!
-                  (for/sum ([a loc])
-                    (optimization-event-profile-weight (attempt-event a)))))
-        (newline))
-
-      (print-separator))))
+  (for ([report hot-reports])
+    (match-define (by-object-type-report typeset failure badness fields)
+      report)
+    (printf
+     "badness: ~a\n\nfor object types: ~a\n\nstrategy: ~a\nreason: ~a\n\n"
+     badness typeset (attempt-strategy failure) (failure-reason failure))
+    (printf "affected fields:\n")
+    (for ([f fields]) (printf "  ~a\n" f))
+    (printf "\n~a\n" (explain-failure failure))
+    (print-separator)))

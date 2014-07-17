@@ -9,18 +9,17 @@
   (define profile (with-input-from-file log-file read-json))
   (define compiles (profile->compiles profile))
 
-  (define sorted-compiles (sort compiles > #:key compile-self-time))
-  (define top-compiles (take sorted-compiles 5)) ; arbitrary
-  ;; (for ([e top-compiles])
-  ;;   (printf "~a - ~a self - ~a total - ~a events\n\n\n"
-  ;;           (compile-location-string e)
-  ;;           (compile-self-time e)
-  ;;           (compile-total-time e)
-  ;;           (length (compile-events e)))) ;; TODO
+  ;; (define sorted-compiles (sort compiles > #:key compile-self-time))
+  ;; (define top-compiles (take sorted-compiles 5)) ; arbitrary
+  ;; ;; (for ([e top-compiles])
+  ;; ;;   (printf "~a - ~a self - ~a total - ~a events\n\n\n"
+  ;; ;;           (compile-location-string e)
+  ;; ;;           (compile-self-time e)
+  ;; ;;           (compile-total-time e)
+  ;; ;;           (length (compile-events e)))) ;; TODO
 
-  ;; TODO crude adapter to work with old analyses. doesn't take advantage
-  ;;   of grouping in compiles (beyond pruning, that is)
-  (define hot-events (append-map compile-events top-compiles))
-  (report-by-object-type hot-events)
+  ;; using pruning at the report level, instead of at the compile level
+  (define all-events (append-map compile-events compiles))
+  (report-by-object-type all-events)
 
   )
