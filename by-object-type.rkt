@@ -111,10 +111,15 @@
 ;; cause for failure. Makes sense, since those may have different solutions.
 ;; TODO probably want a general `report` struct, of which this is a substruct
 (struct by-object-type-report
-  (object-typeset   ; (listof <constructor>) ; all the object types affected
-   failure          ; failure?
-   badness          ; number?
-   affected-fields) ; (listof string?)
+  (object-typeset       ; (listof <constructor>) ; all the object types affected
+   failure              ; failure?
+   badness              ; number?
+   affected-properties) ; (listof (list string? number?))
+  ;;                      keeps track of badness for each property individually
+  ;;                      to help programmers prioritize which properties to fix
+  ;;                      should probably keep reports (and thus pruning) at the
+  ;;                      level of type sets, since it's a logical unit when
+  ;;                      explaining
   #:transparent)
 
 ;; by-object-type-group->reports : (cons (listof <object-type-string>)
@@ -123,7 +128,7 @@
 ;; Generates the list of near miss reports for the given object-type-group.
 ;; Performs temporal merging: merges identical failures that affect the same
 ;;   operation but come from different compiles. Adds up their badness.
-;; Also performs by-field merging.
+;; Also performs by-property merging.
 (define (by-object-type-group->reports types+group)
   (define common-types (first types+group))
   (define group        (rest types+group))
@@ -137,18 +142,20 @@
               all-failures))
   (for/list ([group by-failure-type])
     (define failure (first group))
-    (define total-badness
+    (define (total-badness group)
       (for/sum ([a group])
         (optimization-event-profile-weight
          (attempt-event a))))
-    (define affected-fields
-      (remove-duplicates
-       (for/list ([a group])
-         (optimization-event-property (attempt-event a)))))
+    (define by-property
+      (group-by attempt-property group))
+    (define affected-properties
+      (for/list ([g by-property])
+        (list (attempt-property (first g))
+              (total-badness g))))
     (by-object-type-report common-types
                            failure
-                           total-badness
-                           affected-fields)))
+                           (total-badness group)
+                           affected-properties)))
 
 ;; report-by-object-type : (listof optimization-event?) -> void?
 ;; takes a list of ungrouped events, and prints a by-object-type view
@@ -165,12 +172,13 @@
           (min 5 (length all-reports))))
 
   (for ([report hot-reports])
-    (match-define (by-object-type-report typeset failure badness fields)
+    (match-define (by-object-type-report typeset failure badness properties)
       report)
     (printf
      "badness: ~a\n\nfor object types: ~a\n\nstrategy: ~a\nreason: ~a\n\n"
      badness typeset (attempt-strategy failure) (failure-reason failure))
-    (printf "affected fields:\n")
-    (for ([f fields]) (printf "  ~a\n" f))
+    (printf "affected properties:\n")
+    (for ([p (sort properties > #:key second)])
+      (printf "  ~a (badness: ~a)\n" (first p) (second p)))
     (printf "\n~a\n" (explain-failure failure))
     (print-separator)))

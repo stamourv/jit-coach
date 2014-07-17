@@ -83,6 +83,9 @@
            (* (h (attempt-strategy x))
               (h (attempt-event    x))))])
 
+(define (attempt-property a)
+  (optimization-event-property (attempt-event a)))
+
 ;; reason : string?
 (struct failure attempt (reason) #:transparent
         #:methods gen:equal+hash
