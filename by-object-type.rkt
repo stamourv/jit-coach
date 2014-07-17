@@ -192,9 +192,12 @@
   ;; do pruning based on badness (profile weight, really)
   ;; keep only top N
   ;; TODO could prune differently. e.g. take up to X% of the total badness
+  (define live-reports
+    (filter (lambda (r) (> (by-object-type-report-badness r) 0))
+            all-reports))
   (define hot-reports
-    (take (sort all-reports > #:key by-object-type-report-badness)
-          (min 5 (length all-reports))))
+    (take (sort live-reports > #:key by-object-type-report-badness)
+          (min 5 (length live-reports))))
 
   (for ([report hot-reports])
     (match-define (by-object-type-report typeset failure badness properties)
