@@ -37,7 +37,7 @@
       (not (empty? (set-intersect ts1 ts2)))))
 
 ;; group-by-object-type-poly : (listof optimization-event?)
-;;                               -> (listof (cons (listof <class-type-string>)
+;;                               -> (listof (cons (listof <object-type-string>)
 ;;                                                (listof optimization-event?)))
 ;; For polymorphic operations, we use the following heuristic: if two operations
 ;; on properties of the same name have overlapping type sets, then chances are
