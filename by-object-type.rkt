@@ -4,16 +4,11 @@
 
 (require "structs.rkt" "recommendations.rkt" "utils.rkt")
 
-;;;; Produces reports related to specific object types.
-;;;; These provide a more concise summary of failures than by-location
-;;;; reports, and groups issues that are likely to have a common solution
-;;;; (i.e. if you fix a type, that may resolve multiple related issues).
-
-;;;; Unfortunately, those kinds of reports really only make sense for
-;;;; monomorphic operations, where the layout/etc. of one specific object
-;;;; type causes failures, as opposed to the presence of 0 or multiple object
-;;;; types. The latter will keep failing regardless of whether we change the
-;;;; individual types involved.
+;;;; Produces reports related to specific object types or groups of types.
+;;;; This groups issues that are likely to have a common solution (i.e. if you
+;;;; fix a constructor, you may make operations on multiple fields (operations
+;;;; that could themselves be all over the program) easier to optimize at the
+;;;; same time.
 
 ;;;; Also, this will, of course, only consider operations (or failures)
 ;;;; that we *observed* were related to that type. We won't see places
