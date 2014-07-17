@@ -192,6 +192,8 @@
   ;; do pruning based on badness (profile weight, really)
   ;; keep only top N
   ;; TODO could prune differently. e.g. take up to X% of the total badness
+  ;;   or take reports until we reach a cutoff point (e.g. next is less than
+  ;;   10% of the badness of the previous one)
   (define live-reports
     (filter (lambda (r) (> (by-object-type-report-badness r) 0))
             all-reports))
