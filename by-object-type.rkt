@@ -122,6 +122,27 @@
   ;;                      explaining
   #:transparent)
 
+
+;; counts-as-near-miss? : optimization-event? -> boolean?
+;; Determines whether the given event should be considered a near miss.
+;; If the event has no optimization failures, then it is a success, and not
+;; a near miss.
+;; Some failures do not count as near misses. For example, polymorphic getprops
+;; / setprops that get compiled using the best polymorphic optimization strategy
+;; are irrelevant failures (the code was probably *meant* to be polymorphic) and
+;; should be pruned. Sure, the code may be faster if the operation was
+;; monomorphic, but that recommendation is likely to be rejected by the user.
+;; Note: this includes heuristics that are specific to getprop / setprop.
+(define (counts-as-near-miss? event)
+  (define failures (event-failures event))
+  (cond [(empty? failures) ; success
+         #f]
+        [(regexp-match "inlining polymorphic" (event-strategy event))
+         ;; best polymorphic strategy. irrelevant failure
+         #f]
+        [else
+         #t]))
+
 ;; by-object-type-group->reports : (cons (listof <object-type-string>)
 ;;                                       (listof optimization-event?))
 ;;                                   -> (listof by-object-type-report?)
@@ -130,12 +151,13 @@
 ;;   operation but come from different compiles. Adds up their badness.
 ;; Also performs by-property merging.
 (define (by-object-type-group->reports types+group)
-  (define common-types (first types+group))
-  (define group        (rest types+group))
+  (define common-types     (first types+group))
+  (define group            (rest types+group))
+  (define near-miss-events (filter counts-as-near-miss? group))
 
   ;; secondary grouping by failure type (currently counts both attempted
   ;; strategy and cause of failure)
-  (define all-failures (append-map event-failures group))
+  (define all-failures (append-map event-failures near-miss-events))
   (define by-failure-type
     (group-by (lambda (f) (cons (attempt-strategy f)
                                 (failure-reason f)))
@@ -174,9 +196,10 @@
   (for ([report hot-reports])
     (match-define (by-object-type-report typeset failure badness properties)
       report)
-    (printf
-     "badness: ~a\n\nfor object types: ~a\n\nstrategy: ~a\nreason: ~a\n\n"
-     badness typeset (attempt-strategy failure) (failure-reason failure))
+    (printf "badness: ~a\n\nfor object types: ~a\n\n"
+            badness typeset)
+    (printf "failed strategy: ~a\nreason: ~a\n\n"
+            (attempt-strategy failure) (failure-reason failure))
     (printf "affected properties:\n")
     (for ([p (sort properties > #:key second)])
       (printf "  ~a (badness: ~a)\n" (first p) (second p)))
