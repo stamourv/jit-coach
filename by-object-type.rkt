@@ -204,8 +204,10 @@
       report)
     (printf "badness: ~a\n\nfor object types: ~a\n\n"
             badness typeset)
-    (printf "failed strategy: ~a\nreason: ~a\n\n"
-            (attempt-strategy failure) (failure-reason failure))
+    (printf "chosen strategy: ~a\nfailed strategy: ~a\nreason: ~a\n\n"
+            (event-strategy (attempt-event failure))
+            (attempt-strategy failure)
+            (failure-reason failure))
     (printf "affected properties:\n")
     (for ([p (sort properties > #:key second)])
       (printf "  ~a (badness: ~a)\n" (first p) (second p)))
