@@ -76,5 +76,11 @@
      ;; TODO under what circumstances does this happen?
      "Fallback had unoptimizable access.\n\n"]
 
+    ["access needs to go through the prototype"
+     (string-append
+      "This operation needs to walk the prototype chain to find the property.\n"
+      "Try putting the property directly on the object, or on its direct\n"
+      "prototype.\n\n")]
+
     [reason ;; TODO implement more
      (format "~a (no explanation implemented yet!)\n\n" reason)]))
