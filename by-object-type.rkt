@@ -117,12 +117,16 @@
    ;;                     be equivalent, except for location, which we don't
    ;;                     care about at this point.
    badness              ; number?
-   affected-properties) ; (listof (list string? number?))
-  ;;                      keeps track of badness for each property individually
-  ;;                      to help programmers prioritize which properties to fix
-  ;;                      should probably keep reports (and thus pruning) at the
-  ;;                      level of type sets, since it's a logical unit when
-  ;;                      explaining
+   affected-properties  ; (listof (list string? number?))
+   ;;                     keeps track of badness for each property individually
+   ;;                     to help programmers prioritize which properties to fix
+   ;;                     should probably keep reports (and thus pruning) at the
+   ;;                     level of type sets, since it's a logical unit when
+   ;;                     explaining
+   locations            ; (listof (list location? number?))
+   ;;                     keeps track of badness for each location
+   ;;                     (post temporal + locality merging)
+   )
   #:transparent)
 
 
@@ -190,10 +194,17 @@
       (for/list ([g by-property])
         (list (optimization-event-property (first g))
               (total-badness g))))
+    (define by-location
+      (group-by optimization-event-location group))
+    (define affected-locations
+      (for/list ([g by-location])
+        (list (optimization-event-location (first g))
+              (total-badness g))))
     (by-object-type-report common-types
                            failure
                            (total-badness group)
-                           affected-properties)))
+                           affected-properties
+                           affected-locations)))
 
 ;; report-by-object-type : (listof optimization-event?) -> void?
 ;; takes a list of ungrouped events, and prints a by-object-type view
@@ -215,7 +226,7 @@
           (min 5 (length live-reports))))
 
   (for ([report hot-reports])
-    (match-define (by-object-type-report typeset failure badness properties)
+    (match-define (by-object-type-report typeset failure badness properties locations)
       report)
     (printf "badness: ~a\n\nfor object types: ~a\n\n"
             badness typeset)
@@ -226,5 +237,9 @@
     (printf "affected properties:\n")
     (for ([p (sort properties > #:key second)])
       (printf "  ~a (badness: ~a)\n" (first p) (second p)))
-    (printf "\n~a\n" (explain-failure failure))
+    (printf "\n~a" (explain-failure failure))
+    (printf "locations:\n")
+    (for ([l (sort locations > #:key second)])
+      (printf "  ~a (badness: ~a)\n" (first l) (second l)))
+    (newline)
     (print-separator)))
