@@ -200,11 +200,44 @@
       (for/list ([g by-location])
         (list (optimization-event-location (first g))
               (total-badness g))))
+    ;; TODO for some reports (esp. poly reports), may make sense to report
+    ;;   problem locations. e.g. in deltablue, for addToGraph, some call sites
+    ;;   are doing weird things, and others not
+    ;;   -> solution?: go back to what we were originally doing, that is, group
+    ;;      locations by failure kind. would lead to a lot of info, but o/w we
+    ;;      lose precision.
+    ;;      -> well, can fix that by having those be separate reports for each
+    ;;         failure type.
+    ;;         hmm, actually, aren't we doing exactly that now?
+    ;; TODO explanations are sometimes talking about "this operation", which
+    ;;   makes no sense anymore
     (by-object-type-report common-types
                            failure
                            (total-badness group)
                            affected-properties
                            affected-locations)))
+
+;; report-at-failure-site? : by-object-type-report? -> boolean?
+;; Determines whether the given report should be shown as coming from the
+;; location(s) of the failure (#t) or as coming to the constructor (#f).
+;; Some reports have solutions at the failure site, others at the constructor,
+;; depending on the kind of failure.
+(define (report-at-failure-site? report)
+  (match-define (by-object-type-report
+                 typeset failure badness properties locations)
+    report)
+  (cond
+   [(regexp-match "needs to add field" (failure-reason failure))
+    ;; in this case, *where* the field is added matters, so need to show
+    ;; location
+    #t]
+   [(= (length typeset) 1)
+    ;; failures affect a single type, likely to be fixed at constructor
+    #f]
+   ;; TODO more heuristics
+   [else
+    ;; default: show failure site. more information can't hurt
+    #t]))
 
 ;; report-by-object-type : (listof optimization-event?) -> void?
 ;; takes a list of ungrouped events, and prints a by-object-type view
@@ -226,7 +259,8 @@
           (min 5 (length live-reports))))
 
   (for ([report hot-reports])
-    (match-define (by-object-type-report typeset failure badness properties locations)
+    (match-define (by-object-type-report
+                   typeset failure badness properties locations)
       report)
     (printf "badness: ~a\n\nfor object types: ~a\n\n"
             badness typeset)
@@ -238,8 +272,9 @@
     (for ([p (sort properties > #:key second)])
       (printf "  ~a (badness: ~a)\n" (first p) (second p)))
     (printf "\n~a" (explain-failure failure))
-    (printf "locations:\n")
-    (for ([l (sort locations > #:key second)])
-      (printf "  ~a (badness: ~a)\n" (first l) (second l)))
+    (when (report-at-failure-site? report)
+      (printf "locations:\n")
+      (for ([l (sort locations > #:key second)])
+        (printf "  ~a (badness: ~a)\n" (first l) (second l))))
     (newline)
     (print-separator)))
