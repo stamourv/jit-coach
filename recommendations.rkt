@@ -71,5 +71,12 @@
       "Try putting the property directly on the object, or on its direct\n"
       "prototype.\n\n")]
 
+    ["no known shapes"
+     (string-append
+      "The JIT had no type information available for this operation when it\n"
+      "compiled the surrounding method, which prevented it from optimizing.\n"
+      "Try executing that code (with objects of the right type) during\n"
+      "initialization to provide typo information to the JIT.\n\n")]
+
     [reason ;; TODO implement more
      (format "~a (no explanation implemented yet!)\n\n" reason)]))
