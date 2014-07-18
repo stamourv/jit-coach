@@ -41,6 +41,7 @@ load(base_dir + 'deltablue5.js');
 load(base_dir + 'deltablue6.js');
 load(base_dir + 'deltablue7.js');
 load(base_dir + 'deltablue8.js');
+load(base_dir + 'deltablue9.js');
 load(base_dir + 'raytrace.js');
 load(base_dir + 'raytrace2.js');
 load(base_dir + 'raytrace3.js');

@@ -31,6 +31,7 @@ Also reuses part of the Octane infrastructure for benchmarking.
   6. #5 + monomorphic `UnaryConstraint.isSatisfied`
   7. duplicate `addToGraph`
   8. #7 + duplicate `addConstraint`
+  9. #8 + inline super constructors
 
 #### RayTrace:
   1. baseline
