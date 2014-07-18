@@ -171,7 +171,6 @@
 ;;   operation but come from different compiles. Adds up their badness.
 ;; Also performs by-property merging.
 (define (by-object-type-group->reports types+group)
-  (define common-types     (first types+group))
   (define group            (rest types+group))
   (define near-miss-events (filter counts-as-near-miss? group))
 
@@ -200,18 +199,20 @@
       (for/list ([g by-location])
         (list (optimization-event-location (first g))
               (total-badness g))))
-    ;; TODO for some reports (esp. poly reports), may make sense to report
-    ;;   problem locations. e.g. in deltablue, for addToGraph, some call sites
-    ;;   are doing weird things, and others not
-    ;;   -> solution?: go back to what we were originally doing, that is, group
-    ;;      locations by failure kind. would lead to a lot of info, but o/w we
-    ;;      lose precision.
-    ;;      -> well, can fix that by having those be separate reports for each
-    ;;         failure type.
-    ;;         hmm, actually, aren't we doing exactly that now?
-    ;; TODO explanations are sometimes talking about "this operation", which
-    ;;   makes no sense anymore
-    (by-object-type-report common-types
+
+    ;; Not all the types in the group may be relevant for this specific report.
+    ;; The group includes all types that share the fields we're currently
+    ;; emitting reports about. The failures that this specific report is about
+    ;; may only involve some of those types, so compute the relevant types from
+    ;; the failures themselves.
+    ;; Note: computing those type groups is still necessary, to find out which
+    ;; fields are actually the same.
+    (define relevant-types
+      (for/fold ([ts '()])
+          ([e group])
+        (set-union ts (event-object-types e))))
+
+    (by-object-type-report relevant-types
                            failure
                            (total-badness group)
                            affected-properties
