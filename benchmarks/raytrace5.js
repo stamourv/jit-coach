@@ -514,13 +514,14 @@ Flog.RayTracer.Shape.Plane.prototype = {
 if(typeof(Flog) == 'undefined') var Flog = {};
 if(typeof(Flog.RayTracer) == 'undefined') Flog.RayTracer = {};
 
+var defaultColor = new Flog.RayTracer.Color(0,0,0);
 Flog.RayTracer.IntersectionInfo = function () {
     this.isHit = false;
     this.hitCount = 0;
     this.shape = null;
     this.position = null;
     this.normal = null;
-    this.color = null;
+    this.color = defaultColor;
     this.distance = null;
 }
 
