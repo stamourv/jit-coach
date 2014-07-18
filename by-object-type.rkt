@@ -244,7 +244,11 @@
 ;; takes a list of ungrouped events, and prints a by-object-type view
 ;; of optimization failures
 (define (report-by-object-type all-events)
-  (define by-object-type (group-by-object-type-poly all-events))
+  ;; Only consider optimization events in code that was sampled.
+  (define live-events
+    (filter (lambda (e) (> (optimization-event-profile-weight e) 0))
+            all-events))
+  (define by-object-type (group-by-object-type-poly live-events))
   (define all-reports (append-map by-object-type-group->reports by-object-type))
 
   ;; do pruning based on badness (profile weight, really)
@@ -252,12 +256,9 @@
   ;; TODO could prune differently. e.g. take up to X% of the total badness
   ;;   or take reports until we reach a cutoff point (e.g. next is less than
   ;;   10% of the badness of the previous one)
-  (define live-reports
-    (filter (lambda (r) (> (by-object-type-report-badness r) 0))
-            all-reports))
   (define hot-reports
-    (take (sort live-reports > #:key by-object-type-report-badness)
-          (min 5 (length live-reports))))
+    (take (sort all-reports > #:key by-object-type-report-badness)
+          (min 5 (length all-reports))))
 
   (for ([report hot-reports])
     (match-define (by-object-type-report
