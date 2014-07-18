@@ -61,17 +61,6 @@
       "Singletons are not guaranteed to have properties in a fixed slot.\n"
       "Try making the object's field globals.\n\n")]
 
-    ["shape in dictionary mode"
-     ;; not very actionable
-     ;; dictionary mode is decided at run-time, based on a number of factors,
-     ;; so we don't know why we ended up in dictionary mode, and it's not clear
-     ;; how to avoid it, esp. since it may very well be the intended semantics.
-     ;; TODO prune these reports altogether?
-     (string-append
-      "This operation saw (an) object(s) in dictionary mode.\n"
-      "This typically means objects with a large number of properties, or\n"
-      "dynamically added or removed properties.\n\n")]
-
     ["fallback had unoptimizable access"
      ;; TODO under what circumstances does this happen?
      "Fallback had unoptimizable access.\n\n"]

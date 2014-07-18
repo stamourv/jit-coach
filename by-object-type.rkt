@@ -143,6 +143,19 @@
         [(regexp-match "inlining polymorphic" (event-strategy event))
          ;; best polymorphic strategy. irrelevant failure
          #f]
+        [(and (regexp-match "inlining monomorphic" (event-strategy event))
+              (> (length (event-object-types event)) 1))
+         ;; we can do even better, if all types have the same shape.
+         ;; only consider "inlining monomorphic" to be a failure for actual
+         ;; monomorphic operations (which could potentially use definite slot)
+         #f]
+        [(regexp-match "shape in dictionary mode" (event-strategy event))
+         ;; not actionable
+         ;; dictionary mode is decided at run-time, based on a number of
+         ;; factors, so we don't know why we ended up in dictionary mode, and
+         ;; it's not clear how to avoid it, esp. since it may very well be the
+         ;; intended semantics
+         #f]
         [else
          #t]))
 
