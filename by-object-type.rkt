@@ -107,27 +107,45 @@
     (cons (find-class (first g)) g)))
 
 
-;; For now, allowing multiple reports for the same object-typeset, one per
-;; cause for failure. Makes sense, since those may have different solutions.
-;; TODO probably want a general `report` struct, of which this is a substruct
-(struct by-object-type-report
-  (object-typeset       ; (listof <constructor>) ; all the object types affected
-   failure              ; failure?
-   ;;                     one of the failures from the group. all of them should
-   ;;                     be equivalent, except for location, which we don't
-   ;;                     care about at this point.
-   badness              ; number?
-   affected-properties  ; (listof (list string? number?))
-   ;;                     keeps track of badness for each property individually
-   ;;                     to help programmers prioritize which properties to fix
-   ;;                     should probably keep reports (and thus pruning) at the
-   ;;                     level of type sets, since it's a logical unit when
-   ;;                     explaining
-   locations            ; (listof (list location? number?))
-   ;;                     keeps track of badness for each location
-   ;;                     (post temporal + locality merging)
-   )
+;; General structure representing a coaching report.
+;; Includes one of the failures that originated the report (this is post
+;; merging, so this report may summarize multiple failures). This failure
+;; is considered representative of those that got merged, and should be
+;; identical to the others, except along dimensions that were merged (and
+;; thus should not be presented in the report, so we're good).
+(struct report
+  (object-typeset ; (listof <constructor>) ; all the object types affected
+   failure        ; failure?
+   badness)       ; number?
   #:transparent)
+
+;; Report structure for near misses that we think would be solved by changing
+;; a/some constructor(s).
+;; Does not keep track of failure locations, because (we think) the solution
+;; is not likely to be found there.
+(struct constructor-report report
+  (properties+badnesses) ; (listof (list string? number?))
+  ;; We keep track of badness for each property individually to help
+  ;; programmers prioritize which properties to fix.
+  ;; When reporting near misses at constructors, we report all the common
+  ;; fields of a group of types together. Because they're in the same group,
+  ;; these fields are (or should) be defined together, and so issues about
+  ;; them would also be solved together.
+  #:transparent)
+
+;; Report structure for near misses that we think should be solved directly
+;; at the failure site (or at least, for which the failure site is informative
+;; to find a solution).
+(struct in-situ-report report
+  ;; can get affected property from failure, so not stored directly
+  (locations+badnesses)
+  ;; We keep track of badness for each location (this is post temporal and
+  ;; locality merging).
+  #:transparent)
+
+;; Paper: the division above is worth discussing. Some failures are non-local
+;; (fail at use site, fixed at constructor), but not all of them. Heuristics
+;; to distinguish them, and different info when reporting them.
 
 
 ;; counts-as-near-miss? : optimization-event? -> boolean?
@@ -163,13 +181,68 @@
         [else
          #t]))
 
+
+;; report-in-situ? : failure? -> boolean?
+;; Determines whether the given failure should be reported at the failure site
+;; itself (#t) or at the constructor (#f).
+;; Some failures are solved by changing the constructor, and others by changing
+;; the operation's context. To be actionable, we should report failures where
+;; they would be solved.
+;; This is a set of heuristics to determine where a failure would be solved.
+(define (report-in-situ? failure)
+  (define reason (failure-reason failure))
+  (cond
+   [(regexp-match "needs to add field" reason)
+    ;; in this case, *where* the field is added matters, so need to show
+    ;; location
+    #t]
+   [(regexp-match "access needs to go through the prototype" reason)
+    ;; again, that's operation-specific
+    #t]
+   [(= (length (event-object-types (attempt-event failure))) 1)
+    ;; failures affect a single type, likely to be fixed at constructor
+    #f]
+   ;; TODO more heuristics
+   [else
+    ;; default: show failure site. more information can't hurt
+    #t]))
+
+
+;; helpers for below
+(define (events->total-badness group)
+  (for/sum ([e group])
+    (optimization-event-profile-weight e)))
+(define (events->affected-properties group)
+  (for/list ([g (group-by optimization-event-property group)])
+    (list (optimization-event-property (first g))
+          (events->total-badness g))))
+(define (events->affected-locations group)
+  (for/list ([g (group-by optimization-event-location group)])
+    (list (optimization-event-location (first g))
+          (events->total-badness g))))
+;; Not all the types in a group may be relevant for a specific report.
+;; The group includes all types that share the fields we're currently
+;; emitting reports about. The failures that a specific report is about may
+;; only involve some of those types, so compute the relevant types from the
+;; failures themselves.
+;; Note: computing those type groups is still necessary, to find out which
+;; fields are actually the same.
+(define (events->relevant-types group)
+  (for/fold ([ts '()])
+      ([e group])
+    (set-union ts (event-object-types e))))
+
 ;; by-object-type-group->reports : (cons (listof <object-type-string>)
 ;;                                       (listof optimization-event?))
 ;;                                   -> (listof by-object-type-report?)
 ;; Generates the list of near miss reports for the given object-type-group.
 ;; Performs temporal merging: merges identical failures that affect the same
 ;;   operation but come from different compiles. Adds up their badness.
-;; Also performs by-property merging.
+;; Also performs same-property merging when failure kinds are identical.
+;; Multiple reports can originate from the same type group. Type groups are
+;; mostly used for identifying which properties should be considered the same
+;; across classes, and we don't always merge all failures corresponding to a
+;; group of types.
 (define (by-object-type-group->reports types+group)
   (define group            (rest types+group))
   (define near-miss-events (filter counts-as-near-miss? group))
@@ -182,63 +255,30 @@
   ;; fixed at the same time).
   (define by-failure-type
     (group-by event-last-failure near-miss-events))
-  (for/list ([group by-failure-type])
-    (define failure (event-last-failure (first group)))
-    (define (total-badness group)
-      (for/sum ([e group])
-        (optimization-event-profile-weight e)))
-    (define by-property
-      (group-by optimization-event-property group))
-    (define affected-properties
-      (for/list ([g by-property])
-        (list (optimization-event-property (first g))
-              (total-badness g))))
-    (define by-location
-      (group-by optimization-event-location group))
-    (define affected-locations
-      (for/list ([g by-location])
-        (list (optimization-event-location (first g))
-              (total-badness g))))
-
-    ;; Not all the types in the group may be relevant for this specific report.
-    ;; The group includes all types that share the fields we're currently
-    ;; emitting reports about. The failures that this specific report is about
-    ;; may only involve some of those types, so compute the relevant types from
-    ;; the failures themselves.
-    ;; Note: computing those type groups is still necessary, to find out which
-    ;; fields are actually the same.
-    (define relevant-types
-      (for/fold ([ts '()])
-          ([e group])
-        (set-union ts (event-object-types e))))
-
-    (by-object-type-report relevant-types
+  (flatten
+   (for/list ([group by-failure-type])
+     (define failure     (event-last-failure (first group)))
+     (cond
+      [(report-in-situ? failure)
+       ;; Report at the failure site. One report per property.
+       ;; Reasoning: since solution is not at the constructor, each field
+       ;; should be considered separately, and hence be in a separate report.
+       ;; Still perform same-field merging, though.
+       (define by-property (group-by optimization-event-property group))
+       (for/list ([g by-property])
+         (define failure (first g))
+         (in-situ-report (events->relevant-types g)
+                         (event-last-failure (first g))
+                         (events->total-badness g)
+                         (events->affected-locations g)))]
+      [else
+       ;; Report at the constructor. Emit a single report, and perform
+       ;; by-object-type merging.
+       (constructor-report (events->relevant-types group)
                            failure
-                           (total-badness group)
-                           affected-properties
-                           affected-locations)))
+                           (events->total-badness group)
+                           (events->affected-properties group))]))))
 
-;; report-at-failure-site? : by-object-type-report? -> boolean?
-;; Determines whether the given report should be shown as coming from the
-;; location(s) of the failure (#t) or as coming to the constructor (#f).
-;; Some reports have solutions at the failure site, others at the constructor,
-;; depending on the kind of failure.
-(define (report-at-failure-site? report)
-  (match-define (by-object-type-report
-                 typeset failure badness properties locations)
-    report)
-  (cond
-   [(regexp-match "needs to add field" (failure-reason failure))
-    ;; in this case, *where* the field is added matters, so need to show
-    ;; location
-    #t]
-   [(= (length typeset) 1)
-    ;; failures affect a single type, likely to be fixed at constructor
-    #f]
-   ;; TODO more heuristics
-   [else
-    ;; default: show failure site. more information can't hurt
-    #t]))
 
 ;; report-by-object-type : (listof optimization-event?) -> void?
 ;; takes a list of ungrouped events, and prints a by-object-type view
@@ -257,26 +297,29 @@
   ;;   or take reports until we reach a cutoff point (e.g. next is less than
   ;;   10% of the badness of the previous one)
   (define hot-reports
-    (take (sort all-reports > #:key by-object-type-report-badness)
+    (take (sort all-reports > #:key report-badness)
           (min 5 (length all-reports))))
 
-  (for ([report hot-reports])
-    (match-define (by-object-type-report
-                   typeset failure badness properties locations)
-      report)
+  (for ([r hot-reports])
+    (match-define (report typeset failure badness) r)
     (printf "badness: ~a\n\nfor object types: ~a\n\n"
             badness typeset)
     (printf "chosen strategy: ~a\nfailed strategy: ~a\nreason: ~a\n\n"
             (event-strategy (attempt-event failure))
             (attempt-strategy failure)
             (failure-reason failure))
-    (printf "affected properties:\n")
-    (for ([p (sort properties > #:key second)])
-      (printf "  ~a (badness: ~a)\n" (first p) (second p)))
+    (cond [(constructor-report? r)
+           (printf "affected properties:\n")
+           (for ([p (sort (constructor-report-properties+badnesses r)
+                          > #:key second)])
+             (printf "  ~a (badness: ~a)\n" (first p) (second p)))]
+          [(in-situ-report? r)
+           (printf "affected property: ~a\n\n" (attempt-property failure))
+           (printf "locations:\n")
+           (for ([l (sort (in-situ-report-locations+badnesses r)
+                          > #:key second)])
+             (printf "  ~a (badness: ~a)\n" (first l) (second l)))]
+          [else
+           (error "unknown kind of report" r)])
     (printf "\n~a" (explain-failure failure))
-    (when (report-at-failure-site? report)
-      (printf "locations:\n")
-      (for ([l (sort locations > #:key second)])
-        (printf "  ~a (badness: ~a)\n" (first l) (second l))))
-    (newline)
     (print-separator)))
