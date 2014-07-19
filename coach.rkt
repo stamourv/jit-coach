@@ -2,7 +2,7 @@
 
 (require unstable/list json)
 
-(require "structs.rkt" "parsing.rkt" "by-object-type.rkt")
+(require "structs.rkt" "parsing.rkt" "analysis.rkt")
 
 (module+ main
   (define log-file (vector-ref (current-command-line-arguments) 0))
