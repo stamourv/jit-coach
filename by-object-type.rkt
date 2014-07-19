@@ -307,9 +307,9 @@
                            (events->affected-properties group))]))))
 
 
-;; report-by-object-type : (listof optimization-event?) -> void?
-;; takes a list of ungrouped events, and prints a by-object-type view
-;; of optimization failures
+;; report-by-object-type : (listof optimization-event?) -> (listof report?)
+;; takes a list of ungrouped events, and produces a list of near misses to be
+;; shown to the user, sorted by badness
 (define (report-by-object-type all-events)
   ;; Only consider optimization events in code that was sampled.
   (define live-events
@@ -317,17 +317,7 @@
             all-events))
   (define by-object-type (group-by-object-type-poly live-events))
   (define all-reports (append-map by-object-type-group->reports by-object-type))
-
-  ;; do pruning based on badness (profile weight, really)
-  ;; keep only top N
-  ;; TODO could prune differently. e.g. take up to X% of the total badness
-  ;;   or take reports until we reach a cutoff point (e.g. next is less than
-  ;;   10% of the badness of the previous one)
-  (define hot-reports
-    (take (sort all-reports > #:key report-badness)
-          (min 5 (length all-reports))))
-
-  (for-each display hot-reports))
+  (sort all-reports > #:key report-badness))
 
 (define (print-report r [print-substruct-info void])
   (match-define (report typeset failure badness) r)
