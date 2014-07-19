@@ -117,7 +117,11 @@
   (object-typeset ; (listof <constructor>) ; all the object types affected
    failure        ; failure?
    badness)       ; number?
-  #:transparent)
+  #:transparent
+  #:methods gen:custom-write
+  [(define (write-proc r port _)
+     (parameterize ([current-output-port port])
+       (print-report r)))])
 
 ;; Report structure for near misses that we think would be solved by changing
 ;; a/some constructor(s).
@@ -131,7 +135,17 @@
   ;; fields of a group of types together. Because they're in the same group,
   ;; these fields are (or should) be defined together, and so issues about
   ;; them would also be solved together.
-  #:transparent)
+  #:transparent
+  #:methods gen:custom-write
+  [(define (write-proc r port _)
+     (parameterize ([current-output-port port])
+       (print-report
+        r
+        (lambda ()
+          (printf "affected properties:\n")
+          (for ([p (sort (constructor-report-properties+badnesses r)
+                         > #:key second)])
+            (printf "  ~a (badness: ~a)\n" (first p) (second p)))))))])
 
 ;; Report structure for near misses that we think should be solved directly
 ;; at the failure site (or at least, for which the failure site is informative
@@ -141,7 +155,20 @@
   (locations+badnesses)
   ;; We keep track of badness for each location (this is post temporal and
   ;; locality merging).
-  #:transparent)
+  #:transparent
+  #:methods gen:custom-write
+  [(define (write-proc r port _)
+     (parameterize ([current-output-port port])
+       (print-report
+        r
+        (lambda ()
+          (printf "affected property: ~a\n\n"
+                  (attempt-property (report-failure r)))
+          (printf "locations:\n")
+          (for ([l (sort (in-situ-report-locations+badnesses r)
+                         > #:key second)])
+            (printf "  ~a (badness: ~a)\n" (first l) (second l)))))))])
+
 
 ;; Paper: the division above is worth discussing. Some failures are non-local
 ;; (fail at use site, fixed at constructor), but not all of them. Heuristics
@@ -300,26 +327,16 @@
     (take (sort all-reports > #:key report-badness)
           (min 5 (length all-reports))))
 
-  (for ([r hot-reports])
-    (match-define (report typeset failure badness) r)
-    (printf "badness: ~a\n\nfor object types: ~a\n\n"
-            badness typeset)
-    (printf "chosen strategy: ~a\nfailed strategy: ~a\nreason: ~a\n\n"
-            (event-strategy (attempt-event failure))
-            (attempt-strategy failure)
-            (failure-reason failure))
-    (cond [(constructor-report? r)
-           (printf "affected properties:\n")
-           (for ([p (sort (constructor-report-properties+badnesses r)
-                          > #:key second)])
-             (printf "  ~a (badness: ~a)\n" (first p) (second p)))]
-          [(in-situ-report? r)
-           (printf "affected property: ~a\n\n" (attempt-property failure))
-           (printf "locations:\n")
-           (for ([l (sort (in-situ-report-locations+badnesses r)
-                          > #:key second)])
-             (printf "  ~a (badness: ~a)\n" (first l) (second l)))]
-          [else
-           (error "unknown kind of report" r)])
-    (printf "\n~a" (explain-failure failure))
-    (print-separator)))
+  (for-each display hot-reports))
+
+(define (print-report r [print-substruct-info void])
+  (match-define (report typeset failure badness) r)
+  (printf "badness: ~a\n\nfor object types: ~a\n\n"
+          badness typeset)
+  (printf "chosen strategy: ~a\nfailed strategy: ~a\nreason: ~a\n\n"
+          (event-strategy (attempt-event failure))
+          (attempt-strategy failure)
+          (failure-reason failure))
+  (print-substruct-info)
+  (printf "\n~a" (explain-failure failure))
+  (print-separator))
