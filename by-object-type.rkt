@@ -31,9 +31,21 @@
       ;;   the issue and give more precise reports
       (not (empty? (set-intersect ts1 ts2)))))
 
-;; group-by-object-type-poly : (listof optimization-event?)
-;;                               -> (listof (cons (listof <object-type-string>)
-;;                                                (listof optimization-event?)))
+;; group-by-object-type-group : (listof optimization-event?)
+;;                                -> (listof (listof optimization-event?))
+;;
+;; Group optimization events by type "groups". A type group is a set of object
+;; types that (according to our heuristics) are related by inheritance.
+;; This means that within a type group, all events related to a property `p`
+;; are about the "same" property `p`, either because both properies `p` are
+;; from the same class, or because they're a property from a common ancestor
+;; (either actually, where the property is on the ancestor "class", or morally,
+;; in which case the property may live on the object itself, and sibling
+;; / ancestor classes would also have the field on themselves).
+;;
+;; This allows us to merge near misses that affect the same property, and
+;; generate reports with higher information density.
+;;
 ;; For polymorphic operations, we use the following heuristic: if two operations
 ;; on properties of the same name have overlapping type sets, then chances are
 ;; they're talking about the same property (either from a common ancestor, or
@@ -44,7 +56,7 @@
 ;; Monomorphic operations are handled gracefully. If a property is only ever
 ;; used in monomorphic contexts, will be kept separate from polymorphic
 ;; properties on the same class(es).
-(define (group-by-object-type-poly opt-events)
+(define (group-by-object-type-group opt-events)
 
   ;; Step 1, group operations by property name.
   (define by-name (group-by optimization-event-property opt-events))
@@ -102,9 +114,7 @@
   ;;             (optimization-event-property e)))
   ;;   (newline) (newline) (newline))
 
-  ;; For reporting, attach the equivalence class to each group.
-  (for/list ([g by-typesets])
-    (cons (find-class (first g)) g)))
+  by-typesets)
 
 
 ;; General structure representing a coaching report.
@@ -259,8 +269,7 @@
       ([e group])
     (set-union ts (event-object-types e))))
 
-;; by-object-type-group->reports : (cons (listof <object-type-string>)
-;;                                       (listof optimization-event?))
+;; by-object-type-group->reports : (listof optimization-event?)
 ;;                                   -> (listof by-object-type-report?)
 ;; Generates the list of near miss reports for the given object-type-group.
 ;; Performs temporal merging: merges identical failures that affect the same
@@ -270,8 +279,7 @@
 ;; mostly used for identifying which properties should be considered the same
 ;; across classes, and we don't always merge all failures corresponding to a
 ;; group of types.
-(define (by-object-type-group->reports types+group)
-  (define group            (rest types+group))
+(define (by-object-type-group->reports group)
   (define near-miss-events (filter counts-as-near-miss? group))
 
   ;; Secondary grouping by failure type.
@@ -315,7 +323,7 @@
   (define live-events
     (filter (lambda (e) (> (optimization-event-profile-weight e) 0))
             all-events))
-  (define by-object-type (group-by-object-type-poly live-events))
+  (define by-object-type (group-by-object-type-group live-events))
   (define all-reports (append-map by-object-type-group->reports by-object-type))
   (sort all-reports > #:key report-badness))
 
