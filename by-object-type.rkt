@@ -20,7 +20,7 @@
 ;;   that's a kind of analysis that an OO coach benefits from that a functional
 ;;   coach doesn't as much (I think)
 
-(provide report-by-object-type)
+(provide generate-reports)
 
 
 (define (sets-overlap? ts1 ts2)
@@ -315,10 +315,10 @@
                            (events->affected-properties group))]))))
 
 
-;; report-by-object-type : (listof optimization-event?) -> (listof report?)
-;; takes a list of ungrouped events, and produces a list of near misses to be
-;; shown to the user, sorted by badness
-(define (report-by-object-type all-events)
+;; generate-reports : (listof optimization-event?) -> (listof report?)
+;; Takes a list of ungrouped events, and produces a list of near misses to be
+;; shown to the user, sorted by badness.
+(define (generate-reports all-events)
   ;; Only consider optimization events in code that was sampled.
   (define live-events
     (filter (lambda (e) (> (optimization-event-profile-weight e) 0))

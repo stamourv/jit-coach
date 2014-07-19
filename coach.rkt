@@ -9,7 +9,7 @@
   (define profile (with-input-from-file log-file read-json))
   (define compiles (profile->compiles profile))
   (define all-events (append-map compile-events compiles))
-  (define sorted-reports (report-by-object-type all-events))
+  (define sorted-reports (generate-reports all-events))
 
   ;; do pruning based on badness (profile weight + merging)
   ;; keep only top N
