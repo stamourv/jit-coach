@@ -23,15 +23,16 @@ Also reuses part of the Octane infrastructure for benchmarking.
   5. #2 + #4
 
 #### DeltaBlue:
-  1. baseline
-  2. singleton `Direction` → globals
-  3. singleton `Strength` → globals
-  4. monomorphic `BinaryConstraint.output`
-  5. #2 + #3 + #4
-  6. #5 + monomorphic `UnaryConstraint.isSatisfied`
-  7. duplicate `addToGraph`
-  8. #7 + duplicate `addConstraint`
-  9. #8 + inline super constructors
+  1.  baseline
+  2.  singleton `Direction` → globals
+  3.  singleton `Strength` → globals
+  4.  monomorphic `BinaryConstraint.output`
+  5.  #2 + #3 + #4
+  6.  #5 + monomorphic `UnaryConstraint.isSatisfied`
+  7.  duplicate `addToGraph`
+  8.  #7 + duplicate `addConstraint`
+  9.  #8 + inline super constructors
+  10. #5 + #9
 
 #### RayTrace:
   1. baseline
