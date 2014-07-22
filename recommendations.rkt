@@ -68,8 +68,9 @@
     ["access needs to go through the prototype"
      (string-append
       "This operation needs to walk the prototype chain to find the property.\n"
-      "Try putting the property directly on the object, or on its direct\n"
-      "prototype.\n\n")]
+      "Try putting the property in the same location for all objects.\n"
+      "For example, try always putting it directly on the object, or always\n"
+      "on its direct prototype.\n\n")]
 
     ["no known shapes"
      (string-append
