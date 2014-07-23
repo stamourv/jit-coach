@@ -52,6 +52,8 @@
   (define out (for/list ([i n]) (printf "running set ~a\n" i) (run-once)))
   (define results (parse-results out))
 
+  (record-results results (build-path here "results"))
+
   [plot-x-ticks no-ticks]
   [plot-y-ticks (linear-ticks #:divisors '(5 2))]
   [plot-y-far-ticks no-ticks]
