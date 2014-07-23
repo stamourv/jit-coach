@@ -41,6 +41,11 @@ Also reuses part of the Octane infrastructure for benchmarking.
   4. reordered `Material` fields
   5. #2 + #4
 
+#### Splay:
+  1. baseline
+  2. `root_` on object, not prototype
+  3. `left` and `right` on object, not prototype
+
 
 ### Notes
 * because multiple versions of the same benchmark exist, they must use the
