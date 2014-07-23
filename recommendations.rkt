@@ -79,5 +79,14 @@
       "Try executing that code (with objects of the right type) during\n"
       "initialization to provide typo information to the JIT.\n\n")]
 
+    ["needs to add field"
+     (string-append
+      "This operation may need to add the property it's assigning to to the\n"
+      "object. Initializing it to a default value (of the right type) in the\n"
+      "constructor may enable optimizations.\n"
+      "This failure may also be due to a subclass calling a parent class's\n"
+      "constructor. If so, you may want to inline the parent constructor, or\n"
+      "initialize the property in the subclass's constructor.\n\n")]
+
     [reason ;; TODO implement more
      (format "~a (no explanation implemented yet!)\n\n" reason)]))
