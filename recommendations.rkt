@@ -50,7 +50,7 @@
      ;; TODO use for promixity
      (string-append
       (format "This operation observed different ~a shapes so far.\n" obs)
-      (format "~s is the maximum number for inline property access.\n" max)
+      (format "~a is the maximum number for inline property access.\n" max)
       "Try restricting the number of shapes, either by reducing the number\n"
       "of types that flow here, or making each type use shapes uniformily\n"
       "(e.g. by always initializing fields in the same order).\n\n")]
