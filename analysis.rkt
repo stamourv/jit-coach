@@ -161,12 +161,11 @@
 (define (report-in-situ? failure)
   (define reason (failure-reason failure))
   (cond
-   [(regexp-match "needs to add field" reason)
-    ;; in this case, *where* the field is added matters, so need to show
-    ;; location
-    #t]
-   [(regexp-match "access needs to go through the prototype" reason)
-    ;; again, that's operation-specific
+   [(or (regexp-match "needs to add field" reason)
+        ;; in this case, *where* the field is added matters, so need to show
+        ;; location
+        (regexp-match "access needs to go through the prototype" reason)
+        (regexp-match "no known shapes" reason))
     #t]
    [(= (length (event-object-types (attempt-event failure))) 1)
     ;; failures affect a single type, likely to be fixed at constructor
