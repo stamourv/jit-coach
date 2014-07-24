@@ -176,7 +176,7 @@
   (match-define (list _ operation property file line column script offset)
     (regexp-match
      ;; note: will choke on unusual file / property names
-     "^optimizing ([^ ]+) ([^: ]+) ([^: ]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
+     "^optimizing ([^ ]+) ([^: ]+) ([^:]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
      (first e)))
   (unless (and operation property file line column script offset)
     (error "invalid log entry" (first e)))
