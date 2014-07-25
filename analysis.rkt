@@ -160,14 +160,19 @@
 ;; This is a set of heuristics to determine where a failure would be solved.
 (define (report-in-situ? failure)
   (define reason (failure-reason failure))
+  (define types  (event-object-types (attempt-event failure)))
   (cond
+   [(equal? types '("(unknown-constructor)"))
+    ;; if we don't know the constructor, doing a by-constructor report would
+    ;; remove the only info the user can go by (locations of failures)
+    #t]
    [(or (regexp-match "needs to add field" reason)
         ;; in this case, *where* the field is added matters, so need to show
         ;; location
         (regexp-match "access needs to go through the prototype" reason)
         (regexp-match "no known shapes" reason))
     #t]
-   [(= (length (event-object-types (attempt-event failure))) 1)
+   [(= (length types) 1)
     ;; failures affect a single type, likely to be fixed at constructor
     #f]
    ;; TODO more heuristics
