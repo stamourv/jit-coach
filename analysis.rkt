@@ -118,15 +118,28 @@
 
 
 ;; counts-as-near-miss? : optimization-event? -> boolean?
+;;
 ;; Determines whether the given event should be considered a near miss.
 ;; If the event has no optimization failures, then it is a success, and not
 ;; a near miss.
+;;
 ;; Some failures do not count as near misses. For example, polymorphic getprops
 ;; / setprops that get compiled using the best polymorphic optimization strategy
 ;; are irrelevant failures (the code was probably *meant* to be polymorphic) and
 ;; should be pruned. Sure, the code may be faster if the operation was
 ;; monomorphic, but that recommendation is likely to be rejected by the user.
 ;; Note: this includes heuristics that are specific to getprop / setprop.
+;;
+;; Note: the instrumentation code inside IonMonkey already does a form of
+;; irrelevant failure pruning. I.e., it doesn't report failures for opts that
+;; would only succeed in limited cases, such as emitting code for a known
+;; constant, or for a common getter/setter, as these failures are unlikely to
+;; be indicative of issues. It may be better to do this pruning here in the
+;; tool, if only to have all the irrelevant failure pruning logic in the same
+;; place. This would require some structural changes, as that pruning would need
+;; to be done at the attempt level (i.e. removing attempts from an event) rather
+;; than at the event level (i.e. classifying an entire event as a near miss or
+;; not, which is what we're doing now).
 (define (counts-as-near-miss? event)
   (define failures (event-failures event))
   (cond [(empty? failures) ; success
