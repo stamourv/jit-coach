@@ -181,44 +181,36 @@
   (unless (and operation property file line column script offset)
     (error "invalid log entry" (first e)))
 
-  ;; type info is of the form:
-  ;;   for getprop:
-  ;;     "types: <typeset>"
-  ;;   for setprop:
-  ;;     "obj types: <typeset>"
-  ;;     "property types: <comma-separated-typesets>"
-  ;;     "value types: <typeset>"
-  (define type-dict
-    (with-handlers
-        ([exn:misc:match? (lambda (_) (error "ill-formed event" e))])
-      (cond [(equal? operation "getprop")
-             (match-define (list _ obj-types)
-               (regexp-match "^obj types: ?(.*)$" (second e)))
-             (hash "obj" (parse-typeset obj-types))]
-            [(equal? operation "setprop")
-             (match-define (list _ obj-types)
-               (regexp-match "^obj types: ?(.*)$" (second e)))
-             (match-define (list _ property-types) ; from the heap typeset
-               (regexp-match "^property types: ?(.*)$" (third e)))
-             (match-define (list _ value-types)
-               (regexp-match "^value types: ?(.*)$" (fourth e)))
-             (hash "obj"      (parse-typeset obj-types)
-                   ;; In TI, properties can have multiple typesets (one per
-                   ;; possible object type), which we log comma-separated.
-                   ;; For simplicity, we merge the sets.
-                   ;; TODO may be simpler for instrumentation to allow multiple
-                   ;;   "messages" for property types (to use addOptInfoTypeset)
-                   ;;   instead of a comma-separated list
-                   "property" (merge-typesets
-                               (map parse-typeset
-                                    (string-split property-types ",")))
-                   "value"    (parse-typeset value-types))]
-            [else
-             (error "unknown operation" operation)])))
+  ;; type info is of the form: "<part> types: <typeset>"
+  (define type-log-regexp "^([^ ]+) types: ?(.*)$")
+  (define-values (type-dict n-lines-consumed)
+    (for/fold ([type-dict        (hash)]
+               [n-lines-consumed 0])
+        ([line (rest e)]
+         ;; stop when we reach the end of the type info
+         #:break (not (regexp-match type-log-regexp line)))
+      (match-define (list _ part types)
+        (regexp-match type-log-regexp line))
+      (values (dict-set type-dict
+                        part
+                        (cond [(equal? part "property")
+                               ;; Special case: In TI, properties can have
+                               ;; multiple typesets (one per possible object
+                               ;; type), which we log comma-separated. For
+                               ;; simplicity, we merge the sets.
+                               ;; TODO may be simpler for instrumentation to
+                               ;;   allow multiple "messages" for property types
+                               ;;   (to use addOptInfoTypeset) instead of a
+                               ;;   comma-separated list
+                               (merge-typesets
+                                (map parse-typeset
+                                     (string-split types ",")))]
+                              [else (parse-typeset types)]))
+              (add1 n-lines-consumed))))
+
   (define attempts-log
-    (if (equal? operation "getprop")
-        (drop e 2) ; single line of type info + first line with general info
-        (drop e 4))) ; three lines of type info
+    ;; +1 for the initial line (with location and co)
+    (drop e (add1 n-lines-consumed)))
 
   (define event
     (optimization-event (location file
