@@ -26,9 +26,7 @@
 (define (sets-overlap? ts1 ts2)
   (or (equal? ts1 ts2) ; to count two empty sets as overlapping
       ;; This is desirable to merge reports about fields that have the same
-      ;; name and unknown constructors.
-      ;; TODO try to avoid unknown constructors for singletons. would avoid
-      ;;   the issue and give more precise reports
+      ;; name and no type info.
       (not (empty? (set-intersect ts1 ts2)))))
 
 ;; group-by-object-type-group : (listof optimization-event?)
@@ -179,9 +177,14 @@
   (define reason (failure-reason failure))
   (define types  (event-object-types event))
   (cond
-   [(equal? types '("(unknown-constructor)"))
+   [(regexp-match (first types) ; when it's there, it's the only one
+                  "^(unknown-constructor):[[]")
     ;; if we don't know the constructor, doing a by-constructor report would
-    ;; remove the only info the user can go by (locations of failures)
+    ;; remove the only info the user can go by (locations of failures).
+    ;; Only matches non-singletons (with addresses in `[]`, whereas singletons
+    ;; use `<>`), as singletons are easier to find with field names alone.
+    ;; TODO would be nice to have the location of singletons (would allocation
+    ;;   site give us that info?)
     #t]
    [(or (regexp-match "needs to add field" reason)
         ;; in this case, *where* the field is added matters, so need to show
