@@ -19,6 +19,7 @@
 
 (provide property-events->reports)
 
+;; property-events->reports : (listof optimization-event?) -> (listof report?)
 (define (property-events->reports events)
   (define by-object-type (group-by-object-type-group events))
   (append-map by-object-type-group->reports by-object-type))
