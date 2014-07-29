@@ -2,6 +2,8 @@
 
 (require "recommendations.rkt" "structs.rkt" "utils.rkt")
 
+(require unstable/list)
+
 (provide (all-defined-out))
 
 ;; Data structures to represent near miss reports
@@ -97,3 +99,13 @@
   (print-substruct-info)
   (printf "\n~a" (explain-failure failure))
   (print-separator))
+
+
+;; analysis helpers
+(define (events->total-badness group)
+  (for/sum ([e group])
+    (optimization-event-profile-weight e)))
+(define (events->affected-locations group)
+  (for/list ([g (group-by optimization-event-location group)])
+    (list (optimization-event-location (first g))
+          (events->total-badness g))))

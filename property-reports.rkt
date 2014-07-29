@@ -1,8 +1,8 @@
 #lang racket
 
-(require unstable/list)
-
 (require "structs.rkt" "reports.rkt")
+
+(require unstable/list)
 
 ;;;; Produces reports related to specific object types or groups of types.
 ;;;; This groups issues that are likely to have a common solution (i.e. if you
@@ -16,12 +16,14 @@
 ;;;; code, that would have seen that type, but didn't so didn't know how
 ;;;; to optimize).
 
-;; research: this is a new kind of merging, worth discussing in paper/thesis
-;;   that's a kind of analysis that an OO coach benefits from that a functional
-;;   coach doesn't as much (I think)
 
-(provide generate-reports)
+(provide property-events->reports)
 
+(define (property-events->reports events)
+  (define by-object-type (group-by-object-type-group events))
+  (append-map by-object-type-group->reports by-object-type))
+
+;; -----------------------------------------------------------------------------
 
 (define (sets-overlap? ts1 ts2)
   (or (equal? ts1 ts2) ; to count two empty sets as overlapping
@@ -204,19 +206,12 @@
     #t]))
 
 
-;; helpers for below
-(define (events->total-badness group)
-  (for/sum ([e group])
-    (optimization-event-profile-weight e)))
 (define (events->affected-properties group)
   (for-each assert-property-event group)
   (for/list ([g (group-by optimization-event-property group)])
     (list (optimization-event-property (first g))
           (events->total-badness g))))
-(define (events->affected-locations group)
-  (for/list ([g (group-by optimization-event-location group)])
-    (list (optimization-event-location (first g))
-          (events->total-badness g))))
+
 ;; Not all the types in a group may be relevant for a specific report.
 ;; The group includes all types that share the fields we're currently
 ;; emitting reports about. The failures that a specific report is about may
@@ -284,16 +279,3 @@
                            (events->total-badness group)
                            (events->relevant-types group)
                            (events->affected-properties group))]))))
-
-
-;; generate-reports : (listof optimization-event?) -> (listof report?)
-;; Takes a list of ungrouped events, and produces a list of near misses to be
-;; shown to the user, sorted by badness.
-(define (generate-reports all-events)
-  ;; Only consider optimization events in code that was sampled.
-  (define live-events
-    (filter (lambda (e) (> (optimization-event-profile-weight e) 0))
-            all-events))
-  (define by-object-type (group-by-object-type-group live-events))
-  (define all-reports (append-map by-object-type-group->reports by-object-type))
-  (sort all-reports > #:key report-badness))

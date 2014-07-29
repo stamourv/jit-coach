@@ -2,7 +2,21 @@
 
 (require unstable/list json)
 
-(require "structs.rkt" "parsing.rkt" "analysis.rkt")
+(require "structs.rkt" "parsing.rkt" "reports.rkt" "property-reports.rkt")
+
+
+;; generate-reports : (listof optimization-event?) -> (listof report?)
+;; Takes a list of ungrouped events, and produces a list of near misses to be
+;; shown to the user, sorted by badness.
+(define (generate-reports all-events)
+  ;; Only consider optimization events in code that was sampled.
+  (define live-events
+    (filter (lambda (e) (> (optimization-event-profile-weight e) 0))
+            all-events))
+  (define all-reports ;; TODO do element reports too
+    (property-events->reports (filter property-event? live-events)))
+  (sort all-reports > #:key report-badness))
+
 
 (module+ main
   (define log-file (vector-ref (current-command-line-arguments) 0))
