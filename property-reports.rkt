@@ -142,6 +142,15 @@
 ;; to be done at the attempt level (i.e. removing attempts from an event) rather
 ;; than at the event level (i.e. classifying an entire event as a near miss or
 ;; not, which is what we're doing now).
+;;
+;; Note: the instrumentation-level pruning discussed above may be too eager in
+;; some cases. For example, all failures related to attempting a typed object
+;; strategy are pruned, not just the one where the target is not a typed object.
+;; This means that we may overlook problem cases where the target *is* a typed
+;; object, but something else is going wrong.
+;; Maybe try reporting those failures, and pruning only cases where, e.g., we
+;; fail at a typed object strategy with reason "not a typed object" (like I'm
+;; planning to do for getelem/setelem and "not a string").
 (define (counts-as-near-miss? event)
   (define failures (event-failures event))
   (cond [(empty? failures) ; success
