@@ -15,11 +15,33 @@
   #:transparent
   #:mutable) ; so attempts can refer back to the event
 
+;; event about a getprop or setprop operation
+;; TODO maybe those should be separate struct types
+(define (property-event? event)
+  (define p-e?
+    (member (optimization-event-operation event) '("getprop" "setprop")))
+  (when p-e?
+    (unless (optimization-event-property event)
+      (error "property events must have an associated property" event)))
+  p-e?)
+(define (assert-property-event event)
+  (unless (property-event? event)
+    (error "expecting a property event" event)))
+;; event about a getelem or setelem operation
+(define (element-event? event)
+  (member (optimization-event-operation event) '("getelem" "setelem")))
+(define (assert-element-event event)
+  (unless (element-event? event)
+    (error "expecting an element event" event)))
+
 (define (event-object-typeset event)
+  (assert-property-event event)
   (dict-ref (optimization-event-type-dict event) "obj"))
 (define (event-object-types event) ; only object types, not primitive types
+  (assert-property-event event)
   (typeset-object-types (event-object-typeset event)))
 (define (monomorphic-event? event)
+  (assert-property-event event)
   (single-object-type? (event-object-typeset event)))
 
 ;; representation of SpiderMonkey's TI's type sets

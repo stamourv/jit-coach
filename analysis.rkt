@@ -58,6 +58,8 @@
 ;; properties on the same class(es).
 (define (group-by-object-type-group opt-events)
 
+  (for-each assert-property-event opt-events)
+
   ;; Step 1, group operations by property name.
   (define by-name (group-by optimization-event-property opt-events))
 
@@ -172,8 +174,10 @@
 ;; they would be solved.
 ;; This is a set of heuristics to determine where a failure would be solved.
 (define (report-in-situ? failure)
+  (define event (attempt-event failure))
+  (assert-property-event event) ; just in case
   (define reason (failure-reason failure))
-  (define types  (event-object-types (attempt-event failure)))
+  (define types  (event-object-types event))
   (cond
    [(equal? types '("(unknown-constructor)"))
     ;; if we don't know the constructor, doing a by-constructor report would
@@ -199,6 +203,7 @@
   (for/sum ([e group])
     (optimization-event-profile-weight e)))
 (define (events->affected-properties group)
+  (for-each assert-property-event group)
   (for/list ([g (group-by optimization-event-property group)])
     (list (optimization-event-property (first g))
           (events->total-badness g))))
@@ -214,6 +219,7 @@
 ;; Note: computing those type groups is still necessary, to find out which
 ;; fields are actually the same.
 (define (events->relevant-types group)
+  (for-each assert-property-event group)
   (for/fold ([ts '()])
       ([e group])
     (set-union ts (event-object-types e))))
@@ -229,6 +235,8 @@
 ;; across classes, and we don't always merge all failures corresponding to a
 ;; group of types.
 (define (by-object-type-group->reports group)
+  (for-each assert-property-event group)
+
   (define near-miss-events (filter counts-as-near-miss? group))
 
   ;; Secondary grouping by failure type.
