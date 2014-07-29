@@ -172,13 +172,23 @@
 (define ((parse-event profile-weight) e)
 
   ;; first line is of the form:
-  ;; "optimizing <operation> <property> <file>:<line>:<column> #<script>:<offset>"
-  (match-define (list _ operation property file line column script offset)
+  ;; "optimizing <operation> [<property>] <file>:<line>:<column> #<script>:<offset>"
+  ;; Because "file" can actually refer to an eval'ed script (I think), in which
+  ;; case the "filename" can include spaces and other stuff, and because there
+  ;; is no property field for non-get/setprop log entries, parse those after.
+  (match-define (list _ operation property+file line column script offset)
     (regexp-match
-     ;; note: will choke on unusual file / property names
-     "^optimizing ([^ ]+) ([^: ]+) ([^:]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
+     "^optimizing ([^ ]+) ([^:]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
      (first e)))
-  (unless (and operation property file line column script offset)
+  (define-values (property file)
+    ;; note: will choke on unusual file / property names
+    (cond [(member operation '("getprop" "setprop")) ; match a property name
+           (match-define (list _ property file)
+             (regexp-match "^([^: ]+) ([^:]+)$" property+file))
+           (values property file)]
+          [else ; it's all the filename
+           (values #f property+file)]))
+  (unless (and operation file line column script offset)
     (error "invalid log entry" (first e)))
 
   ;; type info is of the form: "<part> types: <typeset>"
