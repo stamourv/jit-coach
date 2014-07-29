@@ -262,16 +262,16 @@
        (define by-property (group-by optimization-event-property group))
        (for/list ([g by-property])
          (define failure (first g))
-         (in-situ-report (events->relevant-types g)
-                         (event-last-failure (first g))
+         (in-situ-report (event-last-failure (first g))
                          (events->total-badness g)
+                         (events->relevant-types g)
                          (events->affected-locations g)))]
       [else
        ;; Report at the constructor. Emit a single report, and perform
        ;; by-object-type merging.
-       (constructor-report (events->relevant-types group)
-                           failure
+       (constructor-report failure
                            (events->total-badness group)
+                           (events->relevant-types group)
                            (events->affected-properties group))]))))
 
 
