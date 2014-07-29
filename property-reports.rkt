@@ -192,8 +192,9 @@
   (define reason (failure-reason failure))
   (define types  (event-object-types event))
   (cond
-   [(regexp-match (first types) ; when it's there, it's the only one
-                  "^(unknown-constructor):[[]")
+   [(or (empty? types)
+        (regexp-match (first types) ; when it's there, it's the only one
+                      "^(unknown-constructor):[[]"))
     ;; if we don't know the constructor, doing a by-constructor report would
     ;; remove the only info the user can go by (locations of failures).
     ;; Only matches non-singletons (with addresses in `[]`, whereas singletons
