@@ -146,6 +146,9 @@
          #f]
         [(regexp-match "inlining polymorphic" (event-strategy event))
          ;; best polymorphic strategy. irrelevant failure
+         ;; TODO in any polymorphic case, prune all the mono failures.
+         ;;   if I end up using # of failures as part of badness computations,
+         ;;   definitely don't want to count those
          #f]
         [(and (regexp-match "inlining monomorphic" (event-strategy event))
               (> (length (event-object-types event)) 1))
@@ -248,6 +251,8 @@
   ;; and instead report the worst problem. If that problem is fixed, the user
   ;; can re-run the coach and see the other failures (assuming they weren't also
   ;; fixed at the same time).
+  ;; TODO this is a form of failure pruning (or merging?) give it a name, and
+  ;;   discuss in paper
   (define by-failure-type
     (group-by event-last-failure near-miss-events))
   (flatten
@@ -269,6 +274,12 @@
       [else
        ;; Report at the constructor. Emit a single report, and perform
        ;; by-object-type merging.
+       ;; TODO large numbers of fields (TODO find exact # in engine) can cause
+       ;;   definite slot analysis to fail. report that more specifically.
+       ;;   that way, we don't end up doing by-object-type merging on 200+ props
+       ;;   (see GB bench), which leads to huge ridiculous reports
+       ;;   -> soln?: say: too many fields, then show top 5 or so (would benefit
+       ;;      most from being split up)
        (constructor-report failure
                            (events->total-badness group)
                            (events->relevant-types group)
