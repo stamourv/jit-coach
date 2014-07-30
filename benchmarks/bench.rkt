@@ -30,7 +30,7 @@
     ;; Not doing SplayLatency. version name ends up spliced between "Splay" and
     ;; "Latency" which is a pain to parse. Also, it's mainly about measuring GC,
     ;; which we're not really interested in.
-    (for ([bench '("Richards" "DeltaBlue" "RayTrace" "Splay")])
+    (for ([bench '("Richards" "DeltaBlue" "RayTrace" "Splay" "NavierStokes")])
       (for ([line (regexp-match*
                    (string-append bench "[^:]*: [0-9]+\n") s)]
             [i    (in-naturals)])

@@ -46,6 +46,10 @@ Also reuses part of the Octane infrastructure for benchmarking.
   2. `root_` on object, not prototype
   3. `left` and `right` on object, not prototype
 
+#### NavierStokes:
+  1. baseline
+  2. lin_solve2 indexes as integers (all on the relevant lines)
+
 
 ### Notes
 * because multiple versions of the same benchmark exist, they must use the
