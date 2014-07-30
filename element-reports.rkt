@@ -22,7 +22,7 @@
 ;; -----------------------------------------------------------------------------
 
 ;; counts-as-near-miss? : optimization-event? -> boolean?
-;; See comment in propert-reports.rkt for general explanations.
+;; See comment in property-reports.rkt for general explanations.
 (define (counts-as-near-miss? event)
   (define failures (event-failures event))
   (cond [(empty? failures) ; success
