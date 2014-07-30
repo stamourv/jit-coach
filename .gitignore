@@ -1,4 +1,7 @@
 *~
 compiled/
 *.log
-*.reports
+*.reports*
+*.profile*
+plot*.pdf
+results-*
