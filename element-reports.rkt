@@ -96,9 +96,7 @@
 ;; Generates element reports from element optimization events.
 ;;
 ;; Performs a second pass of locality merging, which merges events within
-;; a script that affect the same array (using the address of the array
-;; argument's MDefinition, from the optimization logs to distinguish arrays),
-;; as long as they have the same failure mode.
+;; a script, as long as they have the same failure mode.
 ;;
 ;; This second merging pass is useful because (1) near misses related to the
 ;; same array may be easy to solve together (hypothesis), and so would benefit
@@ -111,15 +109,22 @@
 ;; We limit this merging to within a script to keep changes local, so that users
 ;; don't have to jump all over their program to follow a recommendation.
 ;;
-;; TODO maybe just merge all within the same script, regardless of array?
-;;   try both and see
+;; Note: this used to retrict merging to operations that accessed the same array
+;; (i.e. had the same MDefinition as argument). This proved to be too fine
+;; grained, as the same array could have multiple defs (e.g. if there were
+;; intervening writes, as we're in SSA). This caused very little merging to
+;; happen in practice. However, near misses that did get merged were *very*
+;; close together, which was good to keep changes local.
+
+;; TODO the first locality merging pass could be merged with this one
+;;   need to keep this one because we're going from multiple events to 1 report,
+;;   and can't go to 1 event (as the first pass does)
 
 (define (events->reports all-events)
   (define by-script+array
     (group-by (lambda (e)
-                ;; same script, array and failure mode
+                ;; same script and failure mode
                 (list (location-script (optimization-event-location e))
-                      (optimization-event-argument e)
                       (optimization-event-attempts e)))
               all-events))
   ;; generate one report per group
