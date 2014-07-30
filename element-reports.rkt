@@ -77,11 +77,7 @@
                                 (optimization-event-attempts e)
                                 ;; TODO do we need to have identical types?
                                 ;;   could maybe just merge the type dicts?
-                                (optimization-event-type-dict e)
-                                ;; Note: operations can be different. That means
-                                ;; we may merge getelems with setelems. See what
-                                ;; happens.
-                                ))
+                                (optimization-event-type-dict e)))
               events))
   (for/list ([g by-location])
     (match-define (optimization-event location operation argument type-dict
