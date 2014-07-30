@@ -15,11 +15,43 @@
 (define (element-events->reports events)
   (define reports
     (map event->report
-         (temporal+locality-merging (filter counts-as-near-miss?
-                                            events))))
+         (temporal+locality-merging
+          (filter counts-as-near-miss?
+                  (map irrelevant-failure-pruning events)))))
   reports)
 
 ;; -----------------------------------------------------------------------------
+
+
+;; irrelevant-failure-pruning : optimization-event? -> optimization-event?
+;; Prunes failures that are "expected" to happen, and are not indicative of
+;; problems.
+;; Works at the level of individual failures, removing them from events.
+;; Note: if we eventually use # of failures when computing badness, pruning
+;; at that level is useful.
+;; TODO do the same for property events, instead of dooming the whole event
+(define (irrelevant-failure-pruning event)
+  (match-define (optimization-event location operation property type-dict
+                                    attempts profile-weight)
+    event)
+  (optimization-event location operation property type-dict
+                      (filter (negate irrelevant-failure?) attempts)
+                      profile-weight))
+
+;; irrelevant-failure? : attempt? -> boolean?
+(define (irrelevant-failure? a)
+  (and (failure? a) ; successes are trivially not irrelevant failures
+       (let ()
+         (define strategy (attempt-strategy a))
+         (define reason   (failure-reason   a))
+         (or
+          ;; That will happen most times when we try that strategy. (Most things
+          ;; aren't strings.) Other kinds of failures for that strategy may be
+          ;; worth reporting, though.
+          (and (equal? strategy "string")
+               (equal? reason   "not a string"))
+          ;; TODO more heuristics
+          ))))
 
 ;; counts-as-near-miss? : optimization-event? -> boolean?
 ;; See comment in property-reports.rkt for general explanations.
@@ -27,14 +59,7 @@
   (define failures (event-failures event))
   (cond [(empty? failures) ; success
          #f]
-        [(for/or ([f failures])
-           (and (equal? (attempt-strategy f) "string")
-                (equal? (failure-reason   f) "not a string")))
-         ;; That will happen most times when we try that strategy.
-         ;; (Most things aren't strings.) Other kinds of failures for that
-         ;; strategy may be worth reporting, though.
-         ;; TODO if we end up using # of failures for badness, remove that one
-         #f]
+        ;; TODO more heuristics
         [else
          #t]))
 

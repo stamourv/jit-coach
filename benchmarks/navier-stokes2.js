@@ -196,7 +196,7 @@ function FluidField(canvas) {
                     var lastRow = (j - 1) * rowSize;
                     var currentRow = j * rowSize;
                     var nextRow = (j + 1) * rowSize;
-                    var lastX = x[currentRow];
+                    var lastX = x[currentRow|0];
                     var lastY = y[currentRow];
                     ++currentRow;
                     for (var i = 1; i <= width; i++) {
