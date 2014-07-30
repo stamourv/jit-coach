@@ -70,12 +70,14 @@
         #:transparent
         #:methods gen:custom-write
         [(define (write-proc location port _)
-           (fprintf port "~a:~a:~a (~a ~a, offset: ~a)"
+           (fprintf port "~a:~a:~a (~a~a, offset: ~a)"
                     (location-file location)
                     (location-line location)
                     (location-column location)
                     (location-operation location)
-                    (location-property location)
+                    (if (location-property location)
+                        (format " ~a" (location-property location))
+                        "")
                     ;; because line+column info seems to point at the
                     ;; *statement*, there may be multiple, e.g., getprop x
                     ;; at the same location (e.g. v.x + w.x).
