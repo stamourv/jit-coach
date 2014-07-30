@@ -91,7 +91,8 @@
 
 ;; Report structure for near misses related to array accesses / assignment.
 (struct element-report report
-  (location)
+  ;; all locations have the same badness, because we only merge within a script
+  (locations)
   #:transparent
   #:methods gen:custom-write
   [(define (write-proc r port _)
@@ -99,7 +100,9 @@
        (print-report
         r
         (lambda ()
-          (printf "location: ~a\n" (element-report-location r))))))])
+          (printf "locations:\n")
+          (for ([l (element-report-locations r)])
+            (printf "  ~a\n" l))))))])
 
 
 (define (print-report r [print-substruct-info void])

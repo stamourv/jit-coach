@@ -14,10 +14,10 @@
 ;; element-events->reports : (listof optimization-event?) -> (listof report?)
 (define (element-events->reports events)
   (define reports
-    (map event->report
-         (temporal+locality-merging
-          (filter counts-as-near-miss?
-                  (map irrelevant-failure-pruning events)))))
+    (events->reports
+     (temporal+locality-merging
+      (filter counts-as-near-miss?
+              (map irrelevant-failure-pruning events)))))
   reports)
 
 ;; -----------------------------------------------------------------------------
@@ -91,18 +91,48 @@
                         (events->total-badness g)))) ; add up badness
 
 
-;; event->report : optimization-event? -> report?
-;; Converts an element optimization event to an element report.
-;; Currently, those map one to one because merging is done at the event level.
-;; That may change in the future, as the analysis evolves.
-(define (event->report event)
-  (match-define
-      (optimization-event location operation argument type-dict
-                          attempts profile-weight)
-    event)
-  ;; TODO again, this pruning / merging (keeping only the last failure) is also
-  ;;   done for property reports, but done with the rest of the analysis.
-  ;;   abstract both pieces of code?
-  (element-report (event-last-failure event)
-                  profile-weight
-                  location))
+;; events->reports : (listof optimization-event?) -> (listof report?)
+;;
+;; Generates element reports from element optimization events.
+;;
+;; Performs a second pass of locality merging, which merges events within
+;; a script that affect the same array (using the address of the array
+;; argument's MDefinition, from the optimization logs to distinguish arrays),
+;; as long as they have the same failure mode.
+;;
+;; This second merging pass is useful because (1) near misses related to the
+;; same array may be easy to solve together (hypothesis), and so would benefit
+;; from being reported together, (2) it naturally increases the badness of
+;; element reports, which prevent them from being pushed down in the ranking by
+;; property reports (which are the subject of a lot of merging, and thus
+;; generally have a high badness), and (3) it reduces the total number of
+;; reports, and thus the amount of info shown to the user.
+;;
+;; We limit this merging to within a script to keep changes local, so that users
+;; don't have to jump all over their program to follow a recommendation.
+;;
+;; TODO maybe just merge all within the same script, regardless of array?
+;;   try both and see
+
+(define (events->reports all-events)
+  (define by-script+array
+    (group-by (lambda (e)
+                ;; same script, array and failure mode
+                (list (location-script (optimization-event-location e))
+                      (optimization-event-argument e)
+                      (optimization-event-attempts e)))
+              all-events))
+  ;; generate one report per group
+  (for/list ([g by-script+array])
+    (define representative (first g))
+    (match-define
+        (optimization-event location operation argument type-dict
+                            attempts profile-weight)
+      representative)
+    ;; TODO again, this pruning / merging (keeping only the last failure) is
+    ;;   also done for property reports, but done with the rest of the analysis.
+    ;;   abstract both pieces of code?
+    (element-report (event-last-failure representative)
+                    (events->total-badness g)
+                    ;; should be unique after 1st locality merging pass
+                    (map optimization-event-location g))))
