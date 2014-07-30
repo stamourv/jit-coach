@@ -2,7 +2,8 @@
 
 (require unstable/list json)
 
-(require "structs.rkt" "parsing.rkt" "reports.rkt" "property-reports.rkt")
+(require "structs.rkt" "parsing.rkt" "reports.rkt"
+         "property-reports.rkt" "element-reports.rkt")
 
 
 ;; generate-reports : (listof optimization-event?) -> (listof report?)
@@ -13,8 +14,9 @@
   (define live-events
     (filter (lambda (e) (> (optimization-event-profile-weight e) 0))
             all-events))
-  (define all-reports ;; TODO do element reports too
-    (property-events->reports (filter property-event? live-events)))
+  (define all-reports
+    (append (property-events->reports (filter property-event? live-events))
+            (element-events->reports  (filter element-event?  live-events))))
   (sort all-reports > #:key report-badness))
 
 

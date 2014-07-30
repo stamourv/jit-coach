@@ -13,6 +13,8 @@
   (define event (attempt-event failure))
   (match (failure-reason failure)
 
+    ;; Failures for property events
+
     ["would require a barrier"
      (unless (equal? "setprop" (optimization-event-operation event))
        (error "should only happen for getprop"))
@@ -87,6 +89,27 @@
       "This failure may also be due to a subclass calling a parent class's\n"
       "constructor. If so, you may want to inline the parent constructor, or\n"
       "initialize the property in the subclass's constructor.\n\n")]
+
+
+    ;; Failures for element events
+
+    ["index not an integer, string or symbol"
+     (define unexpected-typeset ; MIR type, so will have a single value type
+       (dict-ref (optimization-event-type-dict event) "index"))
+     (define explained-type
+       (match (first (typeset-primitive-types unexpected-typeset))
+         ["Value"
+          "unknown kind of value"]
+         [t
+          t]))
+     (string-append
+      "This array operation saw an index that was not guaranteed to be either\n"
+      "an integer, a string, or a symbol, and instead was a(n) "
+      explained-type ".\n"
+      "Try using an integer, a string or a symbol instead.\n"
+      "If you're already using an integer, trying doing `index|0` to help the\n"
+      "JIT recognize its type.\n\n")]
+
 
     [reason ;; TODO implement more
      (format "~a (no explanation implemented yet!)\n\n" reason)]))

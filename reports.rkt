@@ -89,6 +89,19 @@
 ;; to distinguish them, and different info when reporting them.
 
 
+;; Report structure for near misses related to array accesses / assignment.
+(struct element-report report
+  (location)
+  #:transparent
+  #:methods gen:custom-write
+  [(define (write-proc r port _)
+     (parameterize ([current-output-port port])
+       (print-report
+        r
+        (lambda ()
+          (printf "location: ~a\n" (element-report-location r))))))])
+
+
 (define (print-report r [print-substruct-info void])
   (match-define (report failure badness) r)
   (printf "badness: ~a\n\n" badness)
