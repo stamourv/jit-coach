@@ -84,8 +84,8 @@
                                       attempts profile-weight)
         (first g))
     (optimization-event location ; same for all
-                        #f ; doesn't matter anymore
-                        #f ; always #f for element events
+                        operation ; same for all
+                        argument ; same for all
                         type-dict ; same for all
                         attempts ; same for all
                         (events->total-badness g)))) ; add up badness
