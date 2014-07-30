@@ -77,7 +77,7 @@
           (printf "for object types: ~a\n\n"
                   (property-report-object-typeset r))
           (printf "affected property: ~a\n\n"
-                  (attempt-property (report-failure r)))
+                  (attempt-argument (report-failure r)))
           (printf "locations:\n")
           (for ([l (sort (in-situ-report-locations+badnesses r)
                          > #:key second)])

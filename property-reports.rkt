@@ -62,7 +62,7 @@
   (for-each assert-property-event opt-events)
 
   ;; Step 1, group operations by property name.
-  (define by-name (group-by optimization-event-property opt-events))
+  (define by-name (group-by optimization-event-argument opt-events))
 
   ;; Step 2, for each property name, find equivalence classes, i.e. find
   ;; properties that are likely to be the "same", not accidental name clashes.
@@ -72,7 +72,7 @@
   ;;   fields are all used monomorphically, it looks like (same for v1, v2)
   (define names->equivalence-classes
     (for/hash ([g by-name])
-      (define name (optimization-event-property (first g)))
+      (define name (optimization-event-argument (first g)))
       (define classes
         (for/fold ([classes '()])
             ([evt g])
@@ -101,7 +101,7 @@
   ;; Step 3, merge properties that appear on the same typesets, so they are
   ;; reported together.
   (define (find-class event)
-    (define name (optimization-event-property event))
+    (define name (optimization-event-argument event))
     (define classes (dict-ref names->equivalence-classes name))
     ;; find the equivalence class our typeset belongs to
     (define evt-types (event-object-types event))
@@ -219,8 +219,8 @@
 
 (define (events->affected-properties group)
   (for-each assert-property-event group)
-  (for/list ([g (group-by optimization-event-property group)])
-    (list (optimization-event-property (first g))
+  (for/list ([g (group-by optimization-event-argument group)])
+    (list (optimization-event-argument (first g))
           (events->total-badness g))))
 
 ;; Not all the types in a group may be relevant for a specific report.
@@ -270,7 +270,7 @@
        ;; Reasoning: since solution is not at the constructor, each field
        ;; should be considered separately, and hence be in a separate report.
        ;; Still perform same-field merging, though.
-       (define by-property (group-by optimization-event-property group))
+       (define by-property (group-by optimization-event-argument group))
        (for/list ([g by-property])
          (define failure (first g))
          (in-situ-report (event-last-failure (first g))

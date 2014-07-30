@@ -6,12 +6,13 @@
 
 ;; location : location?
 ;; operation : "getprop" | "setprop"
+;; argument : string?
 ;; type-dict : (dictof string? typeset?)
 ;;   mapping "operand name" to their possible types
 ;; attempts : (listof attempt?)
 ;; profile-weight : number?
 (struct optimization-event
-  (location operation property type-dict attempts profile-weight)
+  (location operation argument type-dict attempts profile-weight)
   #:transparent
   #:mutable) ; so attempts can refer back to the event
 
@@ -21,7 +22,7 @@
   (define p-e?
     (member (optimization-event-operation event) '("getprop" "setprop")))
   (when p-e?
-    (unless (optimization-event-property event)
+    (unless (optimization-event-argument event)
       (error "property events must have an associated property" event)))
   p-e?)
 (define (assert-property-event event)
@@ -65,8 +66,8 @@
 
 
 ;; file + line + column are not enough to disambiguate. script + offset is
-;; also includes operation + property, for printing
-(struct location (file line column script offset operation property)
+;; also includes operation + argument, for printing
+(struct location (file line column script offset operation argument)
         #:transparent
         #:methods gen:custom-write
         [(define (write-proc location port _)
@@ -75,8 +76,8 @@
                     (location-line location)
                     (location-column location)
                     (location-operation location)
-                    (if (location-property location)
-                        (format " ~a" (location-property location))
+                    (if (location-argument location)
+                        (format " ~a" (location-argument location))
                         "")
                     ;; because line+column info seems to point at the
                     ;; *statement*, there may be multiple, e.g., getprop x
@@ -107,8 +108,8 @@
            (* (h (attempt-strategy x))
               (h (attempt-event    x))))])
 
-(define (attempt-property a)
-  (optimization-event-property (attempt-event a)))
+(define (attempt-argument a)
+  (optimization-event-argument (attempt-event a)))
 
 ;; reason : string?
 (struct failure attempt (reason) #:transparent

@@ -31,10 +31,10 @@
 ;; at that level is useful.
 ;; TODO do the same for property events, instead of dooming the whole event
 (define (irrelevant-failure-pruning event)
-  (match-define (optimization-event location operation property type-dict
+  (match-define (optimization-event location operation argument type-dict
                                     attempts profile-weight)
     event)
-  (optimization-event location operation property type-dict
+  (optimization-event location operation argument type-dict
                       (filter (negate irrelevant-failure?) attempts)
                       profile-weight))
 
@@ -84,7 +84,7 @@
                                 ))
               events))
   (for/list ([g by-location])
-    (match-define (optimization-event location operation property type-dict
+    (match-define (optimization-event location operation argument type-dict
                                       attempts profile-weight)
         (first g))
     (optimization-event location ; same for all
@@ -101,7 +101,7 @@
 ;; That may change in the future, as the analysis evolves.
 (define (event->report event)
   (match-define
-      (optimization-event location operation property type-dict
+      (optimization-event location operation argument type-dict
                           attempts profile-weight)
     event)
   ;; TODO again, this pruning / merging (keeping only the last failure) is also
