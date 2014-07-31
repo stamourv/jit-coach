@@ -75,11 +75,10 @@
       "on its direct prototype.\n\n")]
 
     ["no known shapes"
-     (string-append
-      "The JIT had no type information available for this operation when it\n"
-      "compiled the surrounding method, which prevented it from optimizing.\n"
-      "Try executing that code (with objects of the right type) during\n"
-      "initialization to provide typo information to the JIT.\n\n")]
+     no-type-info-message]
+    ["no type info"
+     no-type-info-message]
+    ;; TODO is that actionable? or should we just prune?
 
     ["needs to add field"
      (string-append
@@ -113,3 +112,11 @@
 
     [reason ;; TODO implement more
      (format "~a (no explanation implemented yet!)\n\n" reason)]))
+
+
+(define no-type-info-message
+  (string-append
+   "The JIT had no type information available for this operation when it\n"
+   "compiled the surrounding method, which prevented it from optimizing.\n"
+   "Try executing that code (with objects of the right type) during\n"
+   "initialization to provide typo information to the JIT.\n\n"))
