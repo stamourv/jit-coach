@@ -172,16 +172,23 @@
 (define ((parse-event profile-weight) e)
 
   ;; first line is of the form:
-  ;; "optimizing <operation> <argument> <file>:<line>:<column> #<script>:<offset>"
-  ;; <argument> is the property name for getprop / setprop, and address of the
-  ;; MDefinition for getelem / setelem
-  ;; Note: <file> can actually refer to an eval'ed script (I think), in which
-  ;; case the "filename" can include spaces and other stuff.
-  (match-define (list _ operation argument file line column script offset)
-    (regexp-match
-     "^optimizing ([^ ]+) ([^ ]+) ([^:]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
-     (first e)))
-  (unless (and operation argument file line column script offset)
+  ;; "optimizing <operation> [<argument>] <file>:<line>:<column> #<script>:<offset>"
+  ;; Because "file" can actually refer to an eval'ed script (I think), in which
+  ;; case the "filename" can include spaces and other stuff, and because there
+  ;; is no argument field for non-get/setprop log entries, parse those after.
+  (match-define (list _ operation argument+file line column script offset)
+     (regexp-match
+      "^optimizing ([^ ]+) ([^:]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
+      (first e)))
+  (define-values (argument file)
+    ;; note: will choke on unusual file / property names
+    (cond [(member operation '("getprop" "setprop")) ; match a property name
+           (match-define (list _ property file)
+             (regexp-match "^([^: ]+) ([^:]+)$" argument+file))
+           (values property file)]
+          [else ; it's all the filename
+           (values #f argument+file)]))
+  (unless (and operation file line column script offset)
     (error "invalid log entry" (first e)))
 
   ;; type info is of the form: "<part> types: <typeset>"
