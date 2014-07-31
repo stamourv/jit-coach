@@ -140,4 +140,4 @@
     (element-report (event-last-failure representative)
                     (events->total-badness g)
                     ;; should be unique after 1st locality merging pass
-                    (map optimization-event-location g))))
+                    (sort (map optimization-event-location g) location<?))))

@@ -87,6 +87,17 @@
                     ;; TODO is there a way to get more precise info?
                     (location-offset location)))])
 
+(define (location<? a b)
+  (match-define (location file-a line-a column-a _ offset-a _ _) a)
+  (match-define (location file-b line-b column-b _ offset-b _ _) b)
+  (unless (equal? file-a file-b)
+    (error "can't compare locations across scripts" a b))
+  (or (< line-a line-b)
+      (and (= line-a line-b)
+           (or (< column-a column-b)
+               (and (= column-a column-b)
+                    (< offset-a offset-b))))))
+
 
 ;; strategy : string?
 ;; event : optimization-event? ; the event during which this attempt was made
