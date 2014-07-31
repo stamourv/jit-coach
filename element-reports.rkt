@@ -59,6 +59,11 @@
   (define failures (event-failures event))
   (cond [(empty? failures) ; success
          #f]
+        [(regexp-match "typed array" (event-strategy event))
+         ;; best possible strategy for typed array access, and only possible
+         ;; for typed arrays (so no other type could pick it, instead of an
+         ;; earlier strategy)
+         #f]
         ;; TODO more heuristics
         [else
          #t]))
