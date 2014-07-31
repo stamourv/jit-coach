@@ -109,6 +109,14 @@
       "If you're already using an integer, trying doing `index|0` to help the\n"
       "JIT recognize its type.\n\n")]
 
+    ["not an object"
+     (define typeset (dict-ref (optimization-event-type-dict event) "obj"))
+     (if (equal? (typeset-primitive-types typeset) '("missing"))
+         no-type-info-message
+         (string-append ;; TODO not very actionable
+          "The JIT is not certain that the accessed array is actually an\n"
+          "object. Try warming up the code to give the JIT more type info.\n"))]
+
 
     [reason ;; TODO implement more
      (format "~a (no explanation implemented yet!)\n\n" reason)]))
