@@ -93,21 +93,9 @@
     ;; Failures for element events
 
     ["index not an integer, string or symbol"
-     (define unexpected-typeset ; MIR type, so will have a single value type
-       (dict-ref (optimization-event-type-dict event) "index"))
-     (define explained-type
-       (match (first (typeset-primitive-types unexpected-typeset))
-         ["Value"
-          "unknown kind of value"]
-         [t
-          t]))
-     (string-append
-      "This array operation saw an index that was not guaranteed to be either\n"
-      "an integer, a string, or a symbol, and instead was a(n) "
-      explained-type ".\n"
-      "Try using an integer, a string or a symbol instead.\n"
-      "If you're already using an integer, trying doing `index|0` to help the\n"
-      "JIT recognize its type.\n\n")]
+     (unexpected-type-message event)]
+    ["index is not a number"
+     (unexpected-type-message event #t)]
 
     ["not an object"
      (define typeset (dict-ref (optimization-event-type-dict event) "obj"))
@@ -128,3 +116,26 @@
    "compiled the surrounding method, which prevented it from optimizing.\n"
    "Try executing that code (with objects of the right type) during\n"
    "initialization to provide typo information to the JIT.\n\n"))
+
+(define (unexpected-type-message event [expected-int? #f])
+  (define unexpected-typeset ; MIR type, so will have a single value type
+    (dict-ref (optimization-event-type-dict event) "index"))
+  (define explained-type
+    (match (first (typeset-primitive-types unexpected-typeset))
+      ["Value"
+       "unknown kind of value"]
+      [t
+       t]))
+  (define expected-msg
+    (if expected-int?
+        "an integer, and instead was a(n) "
+        "either an integer, a string, or a symbol, and instead was a(n)\n"))
+  (string-append
+   "This array operation saw an index that was not guaranteed to be\n"
+   expected-msg
+   explained-type ".\n"
+   "Try using an integer"
+   (if expected-int? "" ", a string or a symbol")
+   " instead.\n"
+   "If you're already using an integer, trying doing `index|0` to help the\n"
+   "JIT recognize its type.\n\n"))
