@@ -97,12 +97,14 @@
     ["index is not a number"
      (unexpected-type-message event #t)]
 
-    ["not an object"
+    [(or "not an object"
+         ;; TODO have instrumentation emit the same message in both cases
+         "input may not be an object") ; used by getprop / setprop
      (define typeset (dict-ref (optimization-event-type-dict event) "obj"))
      (if (equal? (typeset-primitive-types typeset) '("missing"))
          no-type-info-message
          (string-append ;; TODO not very actionable
-          "The JIT is not certain that the accessed array is actually an\n"
+          "The JIT is not certain that the accessed object is actually an\n"
           "object. Try warming up the code to give the JIT more type info.\n"))]
 
 
