@@ -50,6 +50,9 @@ Also reuses part of the Octane infrastructure for benchmarking.
   1. baseline
   2. lin_solve2 indexes as integers (all on the relevant lines)
 
+#### PdfJS:
+  1. baseline
+  2. `buf1` and `buf2` initialized in constructor
 
 ### Notes
 * because multiple versions of the same benchmark exist, they must use the

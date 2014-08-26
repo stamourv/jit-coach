@@ -12,7 +12,8 @@
     (lambda ()
       (parameterize ([current-directory here])
         ;; TODO rewrite to use `run-benchmarks` from benchmark lib
-        (for* ([b '("richards" "deltablue" "raytrace" "splay" "navier-stokes")] ;; TODO bleh, repeats the below
+        (for* ([b '("richards" "deltablue" "raytrace" "splay" "navier-stokes"
+                    "pdfjs")] ;; TODO bleh, repeats the below
                ;; first version has no suffix, bleh
                [v (cons "" (map number->string (range 2 11)))]) ; 10 is current max
           (define file (format "run-~a~a.js" b v))
@@ -32,7 +33,8 @@
     ;; Not doing SplayLatency. version name ends up spliced between "Splay" and
     ;; "Latency" which is a pain to parse. Also, it's mainly about measuring GC,
     ;; which we're not really interested in.
-    (for ([bench '("Richards" "DeltaBlue" "RayTrace" "Splay" "NavierStokes")])
+    (for ([bench '("Richards" "DeltaBlue" "RayTrace" "Splay" "NavierStokes"
+                   "PdfJS")])
       (for ([line (regexp-match*
                    (string-append bench "[^:]*: [0-9]+\n") s)]
             [i    (in-naturals)])
