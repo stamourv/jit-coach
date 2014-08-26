@@ -22,8 +22,6 @@
 // others have been modified more aggresively to make it feel
 // more like a JavaScript program.
 
-var DeltaBlue7Mod = (function(){
-
 /**
  * A JavaScript implementation of the DeltaBlue constraint-solving
  * algorithm, as described in:
@@ -42,15 +40,15 @@ var DeltaBlue7Mod = (function(){
 
 /* --- O b j e c t   M o d e l --- */
 
-// Object.defineProperty(Object.prototype, "inheritsFrom", {
+Object.defineProperty(Object.prototype, "inheritsFrom", {
   
-//   value: function (shuper) {
-//     function Inheriter() { }
-//     Inheriter.prototype = shuper.prototype;
-//     this.prototype = new Inheriter();
-//     this.superConstructor = shuper;
-//   }
-// }); // HERE already defined
+  value: function (shuper) {
+    function Inheriter() { }
+    Inheriter.prototype = shuper.prototype;
+    this.prototype = new Inheriter();
+    this.superConstructor = shuper;
+  }
+});
 
 function OrderedCollection() {
   this.elms = new Array();
@@ -929,11 +927,6 @@ function deltaBlue() {
   projectionTest(100);
 }
 
-    var my = {};
-    my.run = deltaBlue;
-    return my;
-}());
-
 var DeltaBlue7 = new BenchmarkSuite('DeltaBlue [addToGraph fix]', [66118], [
-  new Benchmark('DeltaBlue', true, false, 4400, DeltaBlue7Mod.run)
+  new Benchmark('DeltaBlue', true, false, 4400, deltaBlue)
 ]);

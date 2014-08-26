@@ -26,8 +26,6 @@
  * Update 10/21/2013: fixed loop variables at line 119
  */
 
-var NavierStokesMod = (function(){
-
 var solver = null;
 var nsFrameCounter = 0;
 
@@ -405,21 +403,13 @@ function FluidField(canvas) {
     this.setResolution(64, 64);
 }
 
-    var my = {};
-    my.runNavierStokes = runNavierStokes;
-    my.setupNavierStokes = setupNavierStokes;
-    my.tearDownNavierStokes = tearDownNavierStokes;
-    return my;
-}());
-
-
 var NavierStokes = new BenchmarkSuite('NavierStokes', [1484000],
                                       [new Benchmark('NavierStokes',
                                                      true,
                                                      false,
                                                      180,
-                                                     NavierStokesMod.runNavierStokes,
-                                                     NavierStokesMod.setupNavierStokes,
-                                                     NavierStokesMod.tearDownNavierStokes,
+                                                     runNavierStokes,
+                                                     setupNavierStokes,
+                                                     tearDownNavierStokes,
                                                      null,
                                                      16)]);

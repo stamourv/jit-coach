@@ -22,8 +22,6 @@
 // others have been modified more aggresively to make it feel
 // more like a JavaScript program.
 
-var DeltaBlueMod = (function(){
-
 /**
  * A JavaScript implementation of the DeltaBlue constraint-solving
  * algorithm, as described in:
@@ -878,11 +876,6 @@ function deltaBlue() {
   projectionTest(100);
 }
 
-    var my = {};
-    my.run = deltaBlue;
-    return my;
-}());
-
 var DeltaBlue = new BenchmarkSuite('DeltaBlue', [66118], [
-  new Benchmark('DeltaBlue', true, false, 4400, DeltaBlueMod.run)
+  new Benchmark('DeltaBlue', true, false, 4400, deltaBlue)
 ]);

@@ -35,8 +35,6 @@
 // Martin Richards.
 
 
-var RichardsMod = (function(){
-
 /**
  * The Richards benchmark simulates the task dispatcher of an
  * operating system.
@@ -535,13 +533,6 @@ Packet.prototype.toString = function () {
   return "Packet";
 };
 
-    var my = {};
-    my.runRichards = runRichards;
-    return my;
-}());
-
-
 var Richards = new BenchmarkSuite('Richards', [35302], [
-  new Benchmark("Richards", true, false, 8200,
-                RichardsMod.runRichards)
+  new Benchmark("Richards", true, false, 8200, runRichards)
 ]);

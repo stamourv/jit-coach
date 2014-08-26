@@ -8,8 +8,6 @@
 // untouched. This file also contains a copy of parts of the Prototype
 // JavaScript framework which is used by the ray tracer.
 
-var RayTrace5Mod = (function(){
-
 // Variable used to hold a number that can be used to verify that
 // the scene was ray traced correctly.
 var checkNumber;
@@ -897,12 +895,6 @@ function renderScene(){
     raytracer.renderScene(scene, null, 0);
 }
 
-    var my = {};
-    my.run = renderScene;
-    return my;
-}());
-
-
 var RayTrace = new BenchmarkSuite('RayTrace [#2 + #4]', [739989], [
-  new Benchmark('RayTrace', true, false, 600, RayTrace5Mod.run)
+  new Benchmark('RayTrace', true, false, 600, renderScene)
 ]);

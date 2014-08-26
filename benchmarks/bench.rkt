@@ -1,9 +1,5 @@
 #lang racket
 
-;;;; plan: run run.js n times
-;;;;       each time, extract the time for each bench
-;;;;       then, craft a benchmark-result struct and do plotting
-
 (require benchmark benchmark/types
          plot
          racket/runtime-path
@@ -15,7 +11,13 @@
   (with-output-to-string
     (lambda ()
       (parameterize ([current-directory here])
-        (system (format "js ~a/run.js" (path->string here)))))))
+        ;; TODO rewrite to use `run-benchmarks` from benchmark lib
+        (for* ([b '("richards" "deltablue" "raytrace" "splay" "navier-stokes")] ;; TODO bleh, repeats the below
+               ;; first version has no suffix, bleh
+               [v (cons "" (map number->string (range 2 11)))]) ; 10 is current max
+          (define file (format "run-~a~a.js" b v))
+          (when (file-exists? file) ; different number of versions for each
+            (system (format "js ~a/~a" (path->string here) file))))))))
 
 ;; takes results from all the runs
 ;; returns a list of benchmark-result structs

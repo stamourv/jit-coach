@@ -28,45 +28,7 @@
 
 var base_dir = '';
 load(base_dir + 'base.js'); // HERE changed set of benchmarks
-load(base_dir + 'richards.js');
-load(base_dir + 'richards2.js');
-load(base_dir + 'richards3.js');
-load(base_dir + 'richards4.js');
-load(base_dir + 'richards5.js');
-load(base_dir + 'deltablue.js');
-load(base_dir + 'deltablue2.js');
-load(base_dir + 'deltablue3.js');
-load(base_dir + 'deltablue4.js');
-load(base_dir + 'deltablue5.js');
-load(base_dir + 'deltablue6.js');
 load(base_dir + 'deltablue7.js');
-load(base_dir + 'deltablue8.js');
-load(base_dir + 'deltablue9.js');
-load(base_dir + 'deltablue10.js');
-load(base_dir + 'raytrace.js');
-load(base_dir + 'raytrace2.js');
-load(base_dir + 'raytrace3.js');
-load(base_dir + 'raytrace4.js');
-load(base_dir + 'raytrace5.js');
-load(base_dir + 'splay.js');
-load(base_dir + 'splay2.js');
-load(base_dir + 'splay3.js');
-load(base_dir + 'navier-stokes.js');
-load(base_dir + 'navier-stokes2.js');
-// load(base_dir + 'crypto.js');
-// load(base_dir + 'earley-boyer.js');
-// load(base_dir + 'regexp.js');
-// load(base_dir + 'pdfjs.js');
-// load(base_dir + 'mandreel.js');
-// load(base_dir + 'gbemu-part1.js');
-// load(base_dir + 'gbemu-part2.js');
-// load(base_dir + 'code-load.js');
-// load(base_dir + 'box2d.js');
-// load(base_dir + 'zlib.js');
-// load(base_dir + 'zlib-data.js');
-// load(base_dir + 'typescript.js');
-// load(base_dir + 'typescript-input.js');
-// load(base_dir + 'typescript-compiler.js');
 
 var success = true;
 
@@ -82,10 +44,10 @@ function PrintError(name, error) {
 
 
 function PrintScore(score) {
-  if (success) {
-    print('----');
-    print('Score (version ' + BenchmarkSuite.version + '): ' + score);
-  }
+  // if (success) {
+  //   print('----');
+  //   print('Score (version ' + BenchmarkSuite.version + '): ' + score);
+  // }
 }
 
 

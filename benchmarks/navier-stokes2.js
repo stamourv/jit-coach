@@ -26,8 +26,6 @@
  * Update 10/21/2013: fixed loop variables at line 119
  */
 
-var NavierStokes2Mod = (function(){
-
 var solver = null;
 var nsFrameCounter = 0;
 
@@ -405,21 +403,13 @@ function FluidField(canvas) {
     this.setResolution(64, 64);
 }
 
-    var my = {};
-    my.runNavierStokes = runNavierStokes;
-    my.setupNavierStokes = setupNavierStokes;
-    my.tearDownNavierStokes = tearDownNavierStokes;
-    return my;
-}());
-
-
 var NavierStokes2 = new BenchmarkSuite('NavierStokes [lin_solve2 indexes as integers]', [1484000],
                                       [new Benchmark('NavierStokes',
                                                      true,
                                                      false,
                                                      180,
-                                                     NavierStokes2Mod.runNavierStokes,
-                                                     NavierStokes2Mod.setupNavierStokes,
-                                                     NavierStokes2Mod.tearDownNavierStokes,
+                                                     runNavierStokes,
+                                                     setupNavierStokes,
+                                                     tearDownNavierStokes,
                                                      null,
                                                      16)]);

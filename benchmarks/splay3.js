@@ -33,8 +33,6 @@
 // also has to deal with a lot of changes to the large tree object
 // graph.
 
-var Splay3Mod = (function(){
-
 // Configuration.
 var kSplayTreeSize = 8000;
 var kSplayTreeModifications = 80;
@@ -420,15 +418,7 @@ SplayTree.Node.prototype.traverse_ = function(f) {
   }
 };
 
-    var my = {};
-    my.SplayRun = SplayRun;
-    my.SplaySetup = SplaySetup;
-    my.SplayTearDown = SplayTearDown;
-    my.SplayRMS = SplayRMS;
-    return my;
-}());
-
 var Splay3 = new BenchmarkSuite('Splay [fixed left and right]', [81491, 2739514], [
   new Benchmark("Splay", true, false, 1400,
-                Splay3Mod.SplayRun, Splay3Mod.SplaySetup, Splay3Mod.SplayTearDown /* , Splay3Mod.SplayRMS */ )
+                SplayRun, SplaySetup, SplayTearDown /* , SplayRMS */ )
 ]);

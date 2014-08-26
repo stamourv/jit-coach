@@ -35,8 +35,6 @@
 // Martin Richards.
 
 
-var Richards3Mod = (function(){
-
 /**
  * The Richards benchmark simulates the task dispatcher of an
  * operating system.
@@ -537,13 +535,6 @@ Packet.prototype.toString = function () {
   return "Packet";
 };
 
-    var my = {};
-    my.runRichards = runRichards;
-    return my;
-}());
-
-
 var Richards3 = new BenchmarkSuite('Richards [remove packet queue flip-flopping]', [35302], [
-  new Benchmark("Richards", true, false, 8200,
-                Richards3Mod.runRichards)
+  new Benchmark("Richards", true, false, 8200, runRichards)
 ]);
