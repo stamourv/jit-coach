@@ -22,7 +22,13 @@
 ;; <json profile from gecko profiler> -> (listof compile?)
 ;; Takes a json profile dump (as a string) and returns a list of compiles.
 (provide profile->compiles)
-(define (profile->compiles profile)
+(define (profile->compiles profile*)
+  ;; The xpcshell and dev tools profiler entry points don't output exactly the
+  ;; same format. Find out which we have.
+  (define profile
+    (if (dict-has-key? profile* 'threads)
+        profile*
+        (dict-ref (dict-ref profile* 'profilerData) 'profile)))
   ;; We only handle single-threaded stuff for now.
   (define first-thread (first (dict-ref profile 'threads)))
   (define samples      (dict-ref first-thread 'samples))
