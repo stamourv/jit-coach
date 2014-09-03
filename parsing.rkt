@@ -184,13 +184,13 @@
   ;; is no argument field for non-get/setprop log entries, parse those after.
   (match-define (list _ operation argument+file line column script offset)
      (regexp-match
-      "^optimizing ([^ ]+) ([^:]+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
+      "^optimizing ([^ ]+) (.+):([0-9]+):([0-9]+) #([0-9]+):([0-9]+)$"
       (first e)))
   (define-values (argument file)
     ;; note: will choke on unusual file / property names
     (cond [(member operation '("getprop" "setprop")) ; match a property name
            (match-define (list _ property file)
-             (regexp-match "^([^: ]+) ([^:]+)$" argument+file))
+             (regexp-match "^([^: ]+) (.+)$" argument+file))
            (values property file)]
           [else ; it's all the filename
            (values #f argument+file)]))
