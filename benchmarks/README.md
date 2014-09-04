@@ -49,6 +49,7 @@ Also reuses part of the Octane infrastructure for benchmarking.
 #### NavierStokes:
   1. baseline
   2. lin_solve2 indexes as integers (all on the relevant lines)
+  3. more lin_solve2 indexes as integers (report shows up after 2. only)
 
 #### PdfJS:
   1. baseline
