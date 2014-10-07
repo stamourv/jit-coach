@@ -7,57 +7,47 @@
 
 (define-runtime-path here ".")
 
-(define (run-once)
-  (with-output-to-string
-    (lambda ()
-      (parameterize ([current-directory here])
-        ;; TODO rewrite to use `run-benchmarks` from benchmark lib
-        (for* ([b '("richards" "deltablue" "raytrace" "splay" "navier-stokes"
-                    "pdfjs")] ;; TODO bleh, repeats the below
-               ;; first version has no suffix, bleh
-               [v (cons "" (map number->string (range 2 11)))]) ; 10 is current max
-          (define file (format "run-~a~a.js" b v))
+(define (run-one filename+bench v*)
+  (match-define `(,filename ,bench) filename+bench)
+  (define output
+    (with-output-to-string
+      (lambda ()
+        (parameterize ([current-directory here])
+          ;; first version has no suffix
+          (define v    (if (= v* 1) "" (number->string v*)))
+          (define file (format "run-~a~a.js" filename v))
           (when (file-exists? file) ; different number of versions for each
-            (system (format "js ~a/~a" (path->string here) file))))))))
+            (system (format "js ~a/~a" (path->string here) file)))))))
+  (define matched
+    (regexp-match (string-append bench "[^:]*: [0-9]+\n") output))
+  (displayln ; benchmarking lib reads from stdout
+   (cond [matched
+          (define bench-time (first matched))
+          (match-define (list _ time) (regexp-match ": ([0-9]+)\n$" bench-time))
+          (string->number time)]
+         [else ; version didn't exist
+          0])))
 
-;; takes results from all the runs
-;; returns a list of benchmark-result structs
-(define (parse-results ss)
-  (define scores (make-hash)) ; maps (bench version) to list of scores
-  (define ((add inc) stored) (cons (string->number inc) stored))
+(define (run)
+  (run-benchmarks
+   ;; filenames and benchmark names are slightly different. need both
+   '(("richards"      "Richards")
+     ("deltablue"     "DeltaBlue")
+     ("raytrace"      "RayTrace")
+     ("splay"         "Splay")
+     ("navier-stokes" "NavierStokes")
+     ("pdfjs"         "PdfJS"))
+   (list (range 1 11)) ; 10 is current max
+   run-one
+   #:num-trials 10
+   ;; run-one does the actual parsing
+   #:extract-time (compose string->number string-trim)
+   #:make-name second))
 
-  ;; TODO oops, can't use full version name for each bench, because versions
-  ;;   are different for each bench. just use number for now, and provide a
-  ;;   mapping somewhere
-  (for ([s ss])
-    ;; Not doing SplayLatency. version name ends up spliced between "Splay" and
-    ;; "Latency" which is a pain to parse. Also, it's mainly about measuring GC,
-    ;; which we're not really interested in.
-    (for ([bench '("Richards" "DeltaBlue" "RayTrace" "Splay" "NavierStokes"
-                   "PdfJS")])
-      (for ([line (regexp-match*
-                   (string-append bench "[^:]*: [0-9]+\n") s)]
-            [i    (in-naturals)])
-        (match-define (list _ time) (regexp-match ": ([0-9]+)\n$" line))
-        (dict-update! scores (list bench i) (add time) '()))))
-
-  ;; not all benchmarks have the same # of versions
-  ;; pad with 0s for those who have fewer than the max, and sort in a
-  ;; sensible order to avoid screwing up plot grouping
-  (define max-n-versions (add1 (apply max (map second (dict-keys scores)))))
-  (define benchs (remove-duplicates (map first (dict-keys scores))))
-  (for*/list ([b benchs]
-              [i max-n-versions])
-    (benchmark-result b
-                      (list i)
-                      (dict-ref! scores (list b i) '(0)))))
 
 (module+ main
 
-  (define n 10)
-
-  (define out (for/list ([i n]) (printf "running set ~a\n" i) (run-once)))
-  (define results (parse-results out))
+  (define results (run))
 
   (record-results results (build-path here "results"))
 
@@ -74,7 +64,7 @@
 
   (define renderer
     (render-benchmark-alts
-     '(0) ; normalize to first version
+     '(1) ; normalize to first version
      results))
 
   (plot-file (list renderer (y-tick-lines)) (build-path here "plot.pdf")
