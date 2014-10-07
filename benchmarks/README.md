@@ -55,6 +55,11 @@ Also reuses part of the Octane infrastructure for benchmarking.
   1. baseline
   2. `buf1` and `buf2` initialized in constructor
 
+#### Crypto:
+  1. baseline
+  2. BigInteger.s and BigInteger.t set in constructor
+  3. various `getelem` with guaranteed integers
+
 ### Notes
 * because multiple versions of the same benchmark exist, they must use the
   module pattern to avoid conflicting. That seems to add some overhead (i.e.

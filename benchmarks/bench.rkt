@@ -36,7 +36,8 @@
      ("raytrace"      "RayTrace")
      ("splay"         "Splay")
      ("navier-stokes" "NavierStokes")
-     ("pdfjs"         "PdfJS"))
+     ("pdfjs"         "PdfJS")
+     ("crypto"        "Crypto"))
    (list (range 1 11)) ; 10 is current max
    run-one
    #:num-trials 10
