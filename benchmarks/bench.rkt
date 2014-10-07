@@ -37,7 +37,8 @@
      ("splay"         "Splay")
      ("navier-stokes" "NavierStokes")
      ("pdfjs"         "PdfJS")
-     ("crypto"        "Crypto"))
+     ("crypto"        "Crypto")
+     ("box2d"         "Box2D"))
    (list (range 1 11)) ; 10 is current max
    run-one
    #:num-trials 10

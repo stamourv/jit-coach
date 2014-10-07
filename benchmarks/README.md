@@ -60,6 +60,10 @@ Also reuses part of the Octane infrastructure for benchmarking.
   2. BigInteger.s and BigInteger.t set in constructor
   3. various `getelem` with guaranteed integers
 
+#### Box2D:
+  1. baseline
+  2. consistent field order for `r` objects
+
 ### Notes
 * because multiple versions of the same benchmark exist, they must use the
   module pattern to avoid conflicting. That seems to add some overhead (i.e.
