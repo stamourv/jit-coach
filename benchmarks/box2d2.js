@@ -537,7 +537,7 @@ function MakeNewWorld () {
 
 var world = null;
 
-var Box2DBenchmark = new BenchmarkSuite('Box2D', [5432788],
+var Box2DBenchmark = new BenchmarkSuite('Box2D [consistent field order for r]', [5432788],
                                         [new Benchmark('Box2D',
                                                        false, 
                                                        false,

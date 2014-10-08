@@ -58,7 +58,7 @@ Also reuses part of the Octane infrastructure for benchmarking.
 #### Crypto:
   1. baseline
   2. BigInteger.s and BigInteger.t set in constructor
-  3. various `getelem` with guaranteed integers
+  3. #2 + various `getelem` with guaranteed integers
 
 #### Box2D:
   1. baseline
