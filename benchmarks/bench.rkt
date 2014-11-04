@@ -7,6 +7,12 @@
 
 (define-runtime-path here ".")
 
+(define js-command
+  "js" ; SpiderMonkey
+  ;; "v8"
+  ;; "jsc"
+  )
+
 (define (run-one filename+bench v*)
   (match-define `(,filename ,bench) filename+bench)
   (define output
@@ -17,7 +23,8 @@
           (define v    (if (= v* 1) "" (number->string v*)))
           (define file (format "run-~a~a.js" filename v))
           (when (file-exists? file) ; different number of versions for each
-            (system (format "js ~a/~a" (path->string here) file)))))))
+            (system (format "~a ~a/~a"
+                            js-command (path->string here) file)))))))
   (define matched
     (regexp-match (string-append bench "[^:]*: [0-9]+\n") output))
   (displayln ; benchmarking lib reads from stdout
@@ -69,7 +76,8 @@
      '(1) ; normalize to first version
      results))
 
-  (plot-file (list renderer (y-tick-lines)) (build-path here "plot.pdf")
+  (plot-file (list renderer (y-tick-lines))
+             (build-path here (format "~a-plot.pdf" js-command))
              #:x-label #f #:y-label "Normalized score (higher is better)")
 
   )
