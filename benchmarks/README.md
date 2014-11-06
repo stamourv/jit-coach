@@ -63,8 +63,3 @@ Also reuses part of the Octane infrastructure for benchmarking.
 #### Box2D:
   1. baseline
   2. consistent field order for `r` objects
-
-### Notes
-* because multiple versions of the same benchmark exist, they must use the
-  module pattern to avoid conflicting. That seems to add some overhead (i.e.
-  it reduces scores a bit), but that should be consistent across versions.
