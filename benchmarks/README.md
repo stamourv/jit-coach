@@ -63,3 +63,4 @@ Also reuses part of the Octane infrastructure for benchmarking.
 #### Box2D:
   1. baseline
   2. consistent field order for `r` objects
+  3. #2 + consistent field order for `da` objects
