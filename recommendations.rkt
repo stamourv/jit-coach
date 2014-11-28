@@ -32,13 +32,13 @@
 
     ["property not in a fixed slot"
      (string-append
-      "This property is not guaranteed to always be in the same location.\n"
-      "Are you initializing fields in a different order in different places?\n"
+      "This property is not guaranteed to always be in the same location.\n\n"
+      "Are properties initialized in different orders in different places?\n"
       "  If so, try to stick to the same order.\n"
-      "Are you initializing it in multiple places?\n"
+      "Is this property initialized in multiple places?\n"
       "  If so, try initializing it always in the same place.\n"
-      "Is not sometimes but not always an own property?\n"
-      "  If so, try using it consistently.\n\n")]
+      "Is it sometimes on instances and sometimes on the prototype?\n"
+      "  If so, try always putting it in the same location.\n\n")]
 
     [(? (lambda (x) (regexp-match "^([0-9]+) possible object types$" x)))
      (string-append
