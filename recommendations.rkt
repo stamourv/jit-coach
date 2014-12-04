@@ -55,13 +55,13 @@
       (format "~a is the maximum number for inline property access.\n" max)
       "Try restricting the number of shapes, either by reducing the number\n"
       "of types that flow here, or making each type use shapes uniformily\n"
-      "(e.g. by always initializing fields in the same order).\n\n")]
+      "(e.g. by always initializing properties in the same order).\n\n")]
 
     ["singleton"
      (string-append
       "This object is a singleton.\n"
       "Singletons are not guaranteed to have properties in a fixed slot.\n"
-      "Try making the object's field globals.\n\n")]
+      "Try making the object's properties globals.\n\n")]
 
     ["fallback had unoptimizable access"
      ;; TODO under what circumstances does this happen?
