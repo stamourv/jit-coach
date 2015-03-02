@@ -64,6 +64,9 @@
          ;; for typed arrays (so no other type could pick it, instead of an
          ;; earlier strategy)
          #f]
+        [(regexp-match "string" (event-strategy event))
+         ;; as above
+         #f]
         ;; TODO more heuristics
         [else
          #t]))
